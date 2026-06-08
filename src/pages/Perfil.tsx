@@ -103,18 +103,30 @@ export default function Perfil() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
-        .from('users')
-        .select('phone, level, created_at')
-        .eq('id', user.id)
-        .single();
+      const [userRes, progressRes] = await Promise.all([
+        supabase.from('users').select('phone, level, created_at').eq('id', user.id).single(),
+        supabase.from('user_progress').select('saldo_personal, saldo_ingresos, ganancias_ayer, ganancias_hoy, ganancias_semana, ganancias_mes, ingresos_totales, tareas_equipo, ingresos_recomendacion').eq('user_id', user.id).single(),
+      ]);
 
-      if (data) {
-        setTelefonoUsuario(`+57 ${data.phone}`);
-        setNivelUsuario(data.level || 'PASANTÍA');
-        if (data.created_at) {
-          setFechaIngreso(formatDate(new Date(data.created_at)));
+      if (userRes.data) {
+        setTelefonoUsuario(`+57 ${userRes.data.phone}`);
+        setNivelUsuario(userRes.data.level || 'PASANTÍA');
+        if (userRes.data.created_at) {
+          setFechaIngreso(formatDate(new Date(userRes.data.created_at)));
         }
+      }
+
+      if (progressRes.data) {
+        const p = progressRes.data;
+        setSaldoPersonal(Number(p.saldo_personal) || 0);
+        setSaldoIngresos(Number(p.saldo_ingresos) || 0);
+        setGananciasAyer(Number(p.ganancias_ayer) || 0);
+        setGananciasHoy(Number(p.ganancias_hoy) || 0);
+        setGananciasSemana(Number(p.ganancias_semana) || 0);
+        setGananciasMes(Number(p.ganancias_mes) || 0);
+        setIngresosTotales(Number(p.ingresos_totales) || 0);
+        setTareasEquipo(Number(p.tareas_equipo) || 0);
+        setIngresosRecomendacion(Number(p.ingresos_recomendacion) || 0);
       }
     }
     fetchProfile();
