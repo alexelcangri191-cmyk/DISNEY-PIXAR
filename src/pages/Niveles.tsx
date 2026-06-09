@@ -39,12 +39,11 @@ export default function Niveles() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [activating, setActivating] = useState(false);
+  const [activating, setActivating] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch levels first (works for anon + authenticated)
         const { data: levelsData, error: levelsErr } = await supabase
           .from('levels')
           .select('*')
@@ -56,23 +55,19 @@ export default function Niveles() {
           setLevels(levelsData as LevelData[]);
         }
 
-        // Try to fetch user progress (requires auth + existing row)
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: progressData, error: progressErr } = await supabase
+          const { data: progressData } = await supabase
             .from('user_progress')
             .select('nivel_activo, pasantia_bloqueada, pasantia_completada, videos_vistos_hoy, videos_fecha, saldo_personal')
             .eq('user_id', user.id)
             .maybeSingle();
 
-          if (progressErr) {
-            // Non-fatal: page still shows levels
-          } else if (progressData) {
+          if (progressData) {
             setProgress(progressData as ProgressData);
           }
-          // If no progress row exists yet, that's OK — default values apply
         }
-      } catch (err) {
+      } catch {
         setErrorMsg('Error de conexión. Intenta recargar la página.');
       } finally {
         setLoading(false);
@@ -82,32 +77,38 @@ export default function Niveles() {
   }, []);
 
   const today = new Date().toISOString().slice(0, 10);
-  const pasantia = levels.find(l => l.id === 'pasantia');
-  const j1 = levels.find(l => l.id === 'j1');
-
   const nivelActivo = progress?.nivel_activo || 'pasantia';
-  const isPasantiaActive = nivelActivo === 'pasantia';
-  const isJ1Active = nivelActivo === 'j1';
-  const isPasantiaBlocked = progress?.pasantia_bloqueada ?? false;
   const isPasantiaCompleted = progress?.pasantia_completada ?? false;
+  const isPasantiaBlocked = progress?.pasantia_bloqueada ?? false;
   const isSameDay = progress?.videos_fecha === today;
   const videosVistosHoy = isSameDay ? (progress?.videos_vistos_hoy ?? 0) : 0;
-  const tareasCompletadas = pasantia ? videosVistosHoy >= pasantia.daily_tasks : false;
   const saldoPersonal = Number(progress?.saldo_personal) || 0;
+
+  const activeSortOrder = levels.find(l => l.id === nivelActivo)?.sort_order ?? 1;
+
+  function getLevelState(level: LevelData): 'active' | 'completed' | 'can_activate' | 'locked' {
+    if (level.id === nivelActivo) {
+      if (level.is_free && isPasantiaBlocked) return 'completed';
+      return 'active';
+    }
+    const prevLevel = levels.find(l => l.sort_order === level.sort_order - 1);
+    if (!prevLevel) return 'locked';
+    const prevIsActive = prevLevel.id === nivelActivo;
+    const prevIsCompleted = prevLevel.is_free
+      ? isPasantiaCompleted
+      : prevLevel.sort_order < activeSortOrder;
+    if (prevIsActive || prevIsCompleted) return 'can_activate';
+    return 'locked';
+  }
 
   function dismissAlerts() {
     setAlertMsg(null);
     setSuccessMsg(null);
   }
 
-  async function handlePasantiaStart() {
-    if (tareasCompletadas) return;
-    navigate('/videos');
-  }
-
-  async function handleJ1Activate() {
-    if (!j1 || activating) return;
-    const investment = Number(j1.investment_amount);
+  async function handleActivate(level: LevelData) {
+    if (activating || level.is_free) return;
+    const investment = Number(level.investment_amount);
 
     if (saldoPersonal < investment) {
       setAlertMsg('Saldo insuficiente en billetera personal, por favor recarga');
@@ -115,10 +116,10 @@ export default function Niveles() {
       return;
     }
 
-    setActivating(true);
+    setActivating(level.id);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setActivating(false); return; }
+      if (!user) { setActivating(null); return; }
 
       const { data: freshProg } = await supabase
         .from('user_progress')
@@ -129,7 +130,7 @@ export default function Niveles() {
       const currentSaldo = Number((freshProg as { saldo_personal: number } | null)?.saldo_personal) || 0;
       if (currentSaldo < investment) {
         setAlertMsg('Saldo insuficiente en billetera personal, por favor recarga');
-        setActivating(false);
+        setActivating(null);
         setTimeout(() => { navigate('/recargar'); }, 2000);
         return;
       }
@@ -137,22 +138,22 @@ export default function Niveles() {
       const newSaldo = currentSaldo - investment;
       const { error } = await supabase
         .from('user_progress')
-        .update({ saldo_personal: newSaldo, nivel_activo: 'j1' })
+        .update({ saldo_personal: newSaldo, nivel_activo: level.id })
         .eq('user_id', user.id);
 
       if (error) {
         setAlertMsg('Error al activar el nivel. Intenta de nuevo.');
-        setActivating(false);
+        setActivating(null);
         return;
       }
 
-      setProgress(prev => prev ? { ...prev, saldo_personal: newSaldo, nivel_activo: 'j1' } : prev);
+      setProgress(prev => prev ? { ...prev, saldo_personal: newSaldo, nivel_activo: level.id } : prev);
       setSuccessMsg('Nivel Activado Exitosamente');
       setTimeout(dismissAlerts, 3000);
     } catch {
       setAlertMsg('Error de conexión al activar el nivel.');
     } finally {
-      setActivating(false);
+      setActivating(null);
     }
   }
 
@@ -175,7 +176,6 @@ export default function Niveles() {
       <div className="fixed pointer-events-none z-0" style={{ width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,193,7,0.03) 0%, transparent 70%)', bottom: '100px', left: '50%', transform: 'translateX(-50%)' }} />
 
       <div className="relative z-10 flex flex-col min-h-screen px-4 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => navigate('/perfil')} className="flex items-center gap-2 transition-opacity hover:opacity-70 active:scale-95" style={{ color: '#FFC107' }}>
             <ArrowLeft size={20} />
@@ -188,7 +188,6 @@ export default function Niveles() {
           </div>
         </div>
 
-        {/* Error message */}
         {errorMsg && (
           <div className="w-full max-w-lg mx-auto mb-4">
             <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.4)' }}>
@@ -197,8 +196,6 @@ export default function Niveles() {
             </div>
           </div>
         )}
-
-        {/* Alert / Success messages */}
         {alertMsg && (
           <div className="w-full max-w-lg mx-auto mb-4">
             <div className="rounded-2xl p-4 flex items-center gap-3 cursor-pointer" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.4)' }} onClick={dismissAlerts}>
@@ -216,29 +213,35 @@ export default function Niveles() {
           </div>
         )}
 
-        {/* Level cards */}
         <div className="w-full max-w-lg mx-auto flex flex-col gap-5">
-          {pasantia && (
-            <PasantiaCard
-              level={pasantia}
-              isActive={isPasantiaActive && !isPasantiaCompleted}
-              isBlocked={isPasantiaBlocked || isPasantiaCompleted}
-              isCompleted={isPasantiaCompleted}
-              tareasCompletadas={tareasCompletadas}
-              videosVistosHoy={videosVistosHoy}
-              onStart={handlePasantiaStart}
-            />
-          )}
-          {j1 && (
-            <J1Card
-              level={j1}
-              isActive={isJ1Active}
-              canActivate={!isJ1Active && isPasantiaCompleted}
-              saldoPersonal={saldoPersonal}
-              onActivate={handleJ1Activate}
-              activating={activating}
-            />
-          )}
+          {levels.map(level => {
+            const state = getLevelState(level);
+            if (level.is_free) {
+              return (
+                <FreeLevelCard
+                  key={level.id}
+                  level={level}
+                  state={state}
+                  videosVistosHoy={videosVistosHoy}
+                  onStart={() => {
+                    const tareasCompletadas = videosVistosHoy >= level.daily_tasks;
+                    if (!tareasCompletadas) navigate('/videos');
+                  }}
+                />
+              );
+            }
+            return (
+              <PaidLevelCard
+                key={level.id}
+                level={level}
+                state={state}
+                saldoPersonal={saldoPersonal}
+                activating={activating === level.id}
+                onActivate={() => handleActivate(level)}
+                prevLevelName={levels.find(l => l.sort_order === level.sort_order - 1)?.name ?? ''}
+              />
+            );
+          })}
           {levels.length === 0 && !errorMsg && (
             <div className="text-center py-12">
               <Lock size={32} style={{ color: '#888888' }} className="mx-auto mb-3" />
@@ -252,10 +255,15 @@ export default function Niveles() {
   );
 }
 
-function PasantiaCard({ level, isActive, isBlocked, isCompleted, tareasCompletadas, videosVistosHoy, onStart }: {
-  level: LevelData; isActive: boolean; isBlocked: boolean; isCompleted: boolean; tareasCompletadas: boolean; videosVistosHoy: number; onStart: () => void;
+function FreeLevelCard({ level, state, videosVistosHoy, onStart }: {
+  level: LevelData;
+  state: 'active' | 'completed';
+  videosVistosHoy: number;
+  onStart: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const tareasCompletadas = videosVistosHoy >= level.daily_tasks;
+  const isCompleted = state === 'completed';
 
   const gridItems = [
     { label: 'Ingresos Mensuales', value: formatMoney(Number(level.monthly_income)) },
@@ -267,8 +275,8 @@ function PasantiaCard({ level, isActive, isBlocked, isCompleted, tareasCompletad
   return (
     <div className="rounded-[20px] overflow-hidden transition-all duration-300" style={{
       background: '#1A1A1A',
-      border: `1px solid ${isCompleted ? 'rgba(255,193,7,0.4)' : isActive ? 'rgba(34,197,94,0.5)' : 'rgba(34,197,94,0.2)'}`,
-      boxShadow: isCompleted ? '0 0 40px rgba(255,193,7,0.12)' : isActive ? '0 0 40px rgba(34,197,94,0.15)' : '0 0 20px rgba(34,197,94,0.06)',
+      border: `1px solid ${isCompleted ? 'rgba(255,193,7,0.4)' : 'rgba(34,197,94,0.5)'}`,
+      boxShadow: isCompleted ? '0 0 40px rgba(255,193,7,0.12)' : '0 0 40px rgba(34,197,94,0.15)',
     }}>
       <div className="p-5 pb-3">
         <div className="flex items-center justify-between">
@@ -298,7 +306,7 @@ function PasantiaCard({ level, isActive, isBlocked, isCompleted, tareasCompletad
           <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#888888' }}>Inversión</span>
           <span className="font-black text-sm" style={{ color: '#22C55E' }}>¡GRATIS!</span>
         </div>
-        {isActive && (
+        {state === 'active' && (
           <div className="mt-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold" style={{ color: '#888888' }}>Tareas completadas hoy</span>
@@ -316,7 +324,7 @@ function PasantiaCard({ level, isActive, isBlocked, isCompleted, tareasCompletad
           </div>
         )}
       </div>
-      {isActive && !isBlocked && (
+      {state === 'active' && (
         <div className="px-5 pb-5">
           <button onClick={tareasCompletadas ? undefined : onStart} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
             className="w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 transition-all duration-300 active:scale-95"
@@ -325,10 +333,10 @@ function PasantiaCard({ level, isActive, isBlocked, isCompleted, tareasCompletad
           </button>
         </div>
       )}
-      {(isBlocked || isCompleted) && (
+      {isCompleted && (
         <div className="px-5 pb-5">
-          <div className="w-full py-3.5 rounded-xl flex items-center justify-center gap-2" style={{ background: isCompleted ? 'rgba(255,193,7,0.08)' : 'rgba(255,193,7,0.08)', border: isCompleted ? '1px solid rgba(255,193,7,0.3)' : '1px solid rgba(255,193,7,0.2)', color: '#FFC107' }}>
-            {isCompleted ? <><CheckCircle2 size={16} /><span className="font-bold text-sm">Nivel completado</span></> : <><Lock size={16} /><span className="font-bold text-sm">Nivel bloqueado</span></>}
+          <div className="w-full py-3.5 rounded-xl flex items-center justify-center gap-2" style={{ background: 'rgba(255,193,7,0.08)', border: '1px solid rgba(255,193,7,0.3)', color: '#FFC107' }}>
+            <CheckCircle2 size={16} /><span className="font-bold text-sm">Nivel completado</span>
           </div>
         </div>
       )}
@@ -336,11 +344,19 @@ function PasantiaCard({ level, isActive, isBlocked, isCompleted, tareasCompletad
   );
 }
 
-function J1Card({ level, isActive, canActivate, saldoPersonal, onActivate, activating }: {
-  level: LevelData; isActive: boolean; canActivate: boolean; saldoPersonal: number; onActivate: () => void; activating: boolean;
+function PaidLevelCard({ level, state, saldoPersonal, activating, onActivate, prevLevelName }: {
+  level: LevelData;
+  state: 'active' | 'completed' | 'can_activate' | 'locked';
+  saldoPersonal: number;
+  activating: boolean;
+  onActivate: () => void;
+  prevLevelName: string;
 }) {
   const [hovered, setHovered] = useState(false);
   const canAfford = saldoPersonal >= Number(level.investment_amount);
+  const isLocked = state === 'locked';
+  const canActivate = state === 'can_activate';
+  const isActive = state === 'active';
 
   const gridItems = [
     { label: 'Ingresos Mensuales', value: formatMoney(Number(level.monthly_income)) },
@@ -352,8 +368,9 @@ function J1Card({ level, isActive, canActivate, saldoPersonal, onActivate, activ
   return (
     <div className="rounded-[20px] overflow-hidden transition-all duration-300" style={{
       background: '#1A1A1A',
-      border: `1px solid ${isActive ? 'rgba(255,193,7,0.5)' : 'rgba(255,193,7,0.2)'}`,
-      boxShadow: isActive ? '0 0 40px rgba(255,193,7,0.15)' : '0 0 20px rgba(255,193,7,0.06)',
+      border: `1px solid ${isActive ? 'rgba(255,193,7,0.5)' : isLocked ? 'rgba(255,193,7,0.1)' : 'rgba(255,193,7,0.2)'}`,
+      boxShadow: isActive ? '0 0 40px rgba(255,193,7,0.15)' : isLocked ? 'none' : '0 0 20px rgba(255,193,7,0.06)',
+      opacity: isLocked ? 0.6 : 1,
     }}>
       <div className="p-5 pb-3">
         <div className="flex items-center justify-between">
@@ -405,10 +422,10 @@ function J1Card({ level, isActive, canActivate, saldoPersonal, onActivate, activ
           </button>
         </div>
       )}
-      {!canActivate && !isActive && (
+      {isLocked && (
         <div className="px-5 pb-5">
           <div className="w-full py-3.5 rounded-xl flex items-center justify-center gap-2" style={{ background: 'rgba(255,193,7,0.05)', border: '1px solid rgba(255,193,7,0.15)', color: '#888888' }}>
-            <Lock size={16} /><span className="font-bold text-sm">Completa Pasantía para desbloquear</span>
+            <Lock size={16} /><span className="font-bold text-sm">Completa {prevLevelName} para desbloquear</span>
           </div>
         </div>
       )}

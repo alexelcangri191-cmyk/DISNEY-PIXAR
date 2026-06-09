@@ -232,7 +232,7 @@ export default function Videos() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <DollarSign size={16} style={{ color: allTasksDone ? '#22C55E' : '#FFC107' }} />
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#888888' }}>Tareas de hoy ({level?.id === 'j1' ? 'J1' : 'Pasantía'})</span>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#888888' }}>Tareas de hoy ({level?.id?.toUpperCase() ?? 'Pasantía'})</span>
               </div>
               <span className="text-sm font-black" style={{ color: allTasksDone ? '#22C55E' : '#FFC107' }}>{videosVistosHoy} / {level?.daily_tasks ?? 5}</span>
             </div>
