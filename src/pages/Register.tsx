@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -49,10 +50,79 @@ export default function Register() {
     }
 
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const email = `${formData.phone.trim()}@disneypixar.local`;
+
+      // 1. Crear usuario en Supabase Auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: formData.password,
+      });
+
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          setError('Este número de teléfono ya está registrado');
+        } else {
+          setError(signUpError.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      const userId = authData.user?.id;
+      if (!userId) {
+        setError('Error al crear la cuenta. Intenta de nuevo.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Crear registro en tabla users
+      const { error: userError } = await supabase.from('users').insert({
+        id: userId,
+        email,
+        full_name: formData.fullName.trim(),
+        phone: formData.phone.trim(),
+        referral_code: referralCode,
+        withdrawal_pin: formData.withdrawalPin,
+        level: 'PASANTÍA',
+      });
+
+      if (userError) {
+        setError('Error al guardar datos del usuario: ' + userError.message);
+        setLoading(false);
+        return;
+      }
+
+      // 3. Crear registro en user_progress
+      const { error: progressError } = await supabase.from('user_progress').insert({
+        user_id: userId,
+        nivel_activo: 'pasantia',
+        saldo_personal: 0,
+        saldo_ingresos: 0,
+        ganancias_ayer: 0,
+        ganancias_hoy: 0,
+        ganancias_semana: 0,
+        ganancias_mes: 0,
+        ingresos_totales: 0,
+        tareas_equipo: 0,
+        ingresos_recomendacion: 0,
+        videos_vistos_hoy: 0,
+        pasantia_bloqueada: false,
+        pasantia_completada: false,
+      });
+
+      if (progressError) {
+        setError('Error al inicializar progreso: ' + progressError.message);
+        setLoading(false);
+        return;
+      }
+
       navigate('/perfil');
+    } catch {
+      setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -152,7 +222,7 @@ export default function Register() {
               />
             </div>
 
-            {/* Phone Number (Two column layout) */}
+            {/* Phone Number */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider block mb-2" style={{ color: '#FFC107' }}>
                 Número Telefónico

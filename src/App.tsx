@@ -12,6 +12,7 @@ import FormasDeGanar from './pages/FormasDeGanar';
 import Videos from './pages/Videos';
 import Soporte from './pages/Soporte';
 import Niveles from './pages/Niveles';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   return (
@@ -20,19 +21,19 @@ export default function App() {
         <Route path="/" element={<Welcome />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/perfil" element={<Perfil />} />
-        <Route path="/recargar" element={<UnderConstruction />} />
-        <Route path="/retiros" element={<UnderConstruction />} />
-        <Route path="/historial-recargas" element={<UnderConstruction />} />
-        <Route path="/historial-retiros" element={<UnderConstruction />} />
-        <Route path="/cuenta-bancaria" element={<CuentaBancaria />} />
-        <Route path="/mi-equipo" element={<MiEquipo />} />
-        <Route path="/sobre-nosotros" element={<SobreNosotros />} />
-        <Route path="/informacion-personal" element={<InformacionPersonal />} />
-        <Route path="/formas-de-ganar" element={<FormasDeGanar />} />
-        <Route path="/videos" element={<Videos />} />
-        <Route path="/soporte" element={<Soporte />} />
-        <Route path="/niveles" element={<Niveles />} />
+        <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+        <Route path="/recargar" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
+        <Route path="/retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
+        <Route path="/historial-recargas" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
+        <Route path="/historial-retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
+        <Route path="/cuenta-bancaria" element={<ProtectedRoute><CuentaBancaria /></ProtectedRoute>} />
+        <Route path="/mi-equipo" element={<ProtectedRoute><MiEquipo /></ProtectedRoute>} />
+        <Route path="/sobre-nosotros" element={<ProtectedRoute><SobreNosotros /></ProtectedRoute>} />
+        <Route path="/informacion-personal" element={<ProtectedRoute><InformacionPersonal /></ProtectedRoute>} />
+        <Route path="/formas-de-ganar" element={<ProtectedRoute><FormasDeGanar /></ProtectedRoute>} />
+        <Route path="/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+        <Route path="/soporte" element={<ProtectedRoute><Soporte /></ProtectedRoute>} />
+        <Route path="/niveles" element={<ProtectedRoute><Niveles /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

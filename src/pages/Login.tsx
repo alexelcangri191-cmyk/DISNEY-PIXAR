@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Sparkles } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -31,10 +32,36 @@ export default function Login() {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      navigate('/perfil');
+
+    try {
+      // Usamos el teléfono como email para compatibilidad con Supabase Auth
+      const email = `${formData.phone.trim()}@disneypixar.local`;
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: formData.password,
+      });
+
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('Teléfono o contraseña incorrectos');
+        } else {
+          setError(signInError.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (data.session) {
+        navigate('/perfil');
+      } else {
+        setError('No se pudo iniciar sesión. Intenta de nuevo.');
+        setLoading(false);
+      }
+    } catch {
+      setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -107,44 +134,43 @@ export default function Login() {
         >
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-            {/* Email / Phone */}
+            {/* Phone */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider block mb-2" style={{ color: '#FFC107' }}>
-  Número de Teléfono
-</label>
-<div className="flex gap-2">
-  {/* Prefijo fijo como en el registro */}
-  <div 
-    className="px-4 py-3 rounded-xl text-sm font-bold flex items-center"
-    style={{ 
-      background: '#0F0F0F', 
-      border: '1px solid rgba(255,193,7,0.2)',
-      color: '#FFC107' 
-    }}
-  >
-    +57
-  </div>
-  <input
-    type="tel"
-    name="phone"
-    placeholder="3001234567"
-    value={formData.phone}
-    onChange={handleChange}
-    className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-gray-500 transition-all duration-300 focus:outline-none"
-    style={{
-      background: '#0F0F0F',
-      border: '1px solid rgba(255,193,7,0.2)',
-    }}
-    onFocus={(e) => {
-      (e.target as HTMLInputElement).style.borderColor = 'rgba(255,193,7,0.6)';
-      (e.target as HTMLInputElement).style.boxShadow = '0 0 16px rgba(255,193,7,0.15)';
-    }}
-    onBlur={(e) => {
-      (e.target as HTMLInputElement).style.borderColor = 'rgba(255,193,7,0.2)';
-      (e.target as HTMLInputElement).style.boxShadow = 'none';
-    }}
-  />
-</div>
+                Número de Teléfono
+              </label>
+              <div className="flex gap-2">
+                <div
+                  className="px-4 py-3 rounded-xl text-sm font-bold flex items-center"
+                  style={{
+                    background: '#0F0F0F',
+                    border: '1px solid rgba(255,193,7,0.2)',
+                    color: '#FFC107',
+                  }}
+                >
+                  +57
+                </div>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="3001234567"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-gray-500 transition-all duration-300 focus:outline-none"
+                  style={{
+                    background: '#0F0F0F',
+                    border: '1px solid rgba(255,193,7,0.2)',
+                  }}
+                  onFocus={(e) => {
+                    (e.target as HTMLInputElement).style.borderColor = 'rgba(255,193,7,0.6)';
+                    (e.target as HTMLInputElement).style.boxShadow = '0 0 16px rgba(255,193,7,0.15)';
+                  }}
+                  onBlur={(e) => {
+                    (e.target as HTMLInputElement).style.borderColor = 'rgba(255,193,7,0.2)';
+                    (e.target as HTMLInputElement).style.boxShadow = 'none';
+                  }}
+                />
+              </div>
             </div>
 
             {/* Password */}
