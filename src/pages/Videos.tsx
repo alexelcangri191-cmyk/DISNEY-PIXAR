@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Video, Sparkles, CheckCircle2, Clock, DollarSign, Play, Lock } from 'lucide-react';
+import { ArrowLeft, Video, Sparkles, CheckCircle2, Clock, DollarSign, Play, Lock, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import BottomNav from '../components/BottomNav';
 
@@ -19,6 +19,7 @@ interface ProgressData {
   ganancias_mes: number;
   ganancias_semana: number;
   ingresos_totales: number;
+  pasantia_completada: boolean;
 }
 
 const MOCK_VIDEOS = [
@@ -50,7 +51,7 @@ export default function Videos() {
 
         const { data: progressData, error: progressErr } = await supabase
           .from('user_progress')
-          .select('nivel_activo, videos_vistos_hoy, videos_fecha, saldo_ingresos, ganancias_hoy, ganancias_mes, ganancias_semana, ingresos_totales')
+          .select('nivel_activo, videos_vistos_hoy, videos_fecha, saldo_ingresos, ganancias_hoy, ganancias_mes, ganancias_semana, ingresos_totales, pasantia_completada')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -83,7 +84,9 @@ export default function Videos() {
   const tareasRestantes = level ? Math.max(0, level.daily_tasks - videosVistosHoy) : 0;
   const allTasksDone = tareasRestantes === 0;
 
-  const canWatchVideos = true;
+  const isPasantia = (progress?.nivel_activo || 'pasantia') === 'pasantia';
+  const isPasantiaBlocked = isPasantia && (progress?.pasantia_completada ?? false);
+  const canWatchVideos = !isPasantiaBlocked && !allTasksDone;
 
   async function handleWatchVideo(videoId: number) {
     if (allTasksDone || watchingVideo !== null || !canWatchVideos) return;
@@ -129,22 +132,30 @@ export default function Videos() {
         updatePayload.ganancias_hoy = taskPayment;
       }
 
+      const isPasantiaLevelNow = String(prog?.nivel_activo || 'pasantia') === 'pasantia';
+      const justFinishedAllTasks = newWatched >= (level?.daily_tasks ?? 5);
+
+      if (isPasantiaLevelNow && justFinishedAllTasks) {
+        updatePayload.pasantia_completada = true;
+      }
+
       await supabase
         .from('user_progress')
         .update(updatePayload)
         .eq('user_id', user.id);
 
       setCompletedToday(prev => new Set([...prev, videoId]));
-      setProgress(prev => prev ? {
-        ...prev,
-        videos_vistos_hoy: newWatched,
-        videos_fecha: today,
-        saldo_ingresos: (Number(prev.saldo_ingresos) || 0) + taskPayment,
-        ganancias_hoy: isCurrentDay ? (Number(prev.ganancias_hoy) || 0) + taskPayment : taskPayment,
-        ganancias_mes: (Number(prev.ganancias_mes) || 0) + taskPayment,
-        ganancias_semana: (Number(prev.ganancias_semana) || 0) + taskPayment,
-        ingresos_totales: (Number(prev.ingresos_totales) || 0) + taskPayment,
-      } : prev);
+        setProgress(prev => prev ? {
+          ...prev,
+          videos_vistos_hoy: newWatched,
+          videos_fecha: today,
+          saldo_ingresos: (Number(prev.saldo_ingresos) || 0) + taskPayment,
+          ganancias_hoy: isCurrentDay ? (Number(prev.ganancias_hoy) || 0) + taskPayment : taskPayment,
+          ganancias_mes: (Number(prev.ganancias_mes) || 0) + taskPayment,
+          ganancias_semana: (Number(prev.ganancias_semana) || 0) + taskPayment,
+          ingresos_totales: (Number(prev.ingresos_totales) || 0) + taskPayment,
+          pasantia_completada: isPasantiaLevelNow && justFinishedAllTasks ? true : prev.pasantia_completada,
+        } : prev);
     } catch {
       // Silent fail on video watch DB update
     } finally {
@@ -159,6 +170,40 @@ export default function Videos() {
           <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#FFC107', animationDelay: '0ms' }} />
           <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#FFC107', animationDelay: '150ms' }} />
           <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#FFC107', animationDelay: '300ms' }} />
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  if (isPasantiaBlocked) {
+    return (
+      <div className="relative min-h-screen overflow-x-hidden pb-20" style={{ background: '#000000' }}>
+        <div className="fixed pointer-events-none z-0" style={{ width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,193,7,0.06) 0%, transparent 70%)', top: '-200px', left: '50%', transform: 'translateX(-50%)' }} />
+        <div className="fixed pointer-events-none z-0" style={{ width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,193,7,0.04) 0%, transparent 70%)', bottom: '100px', left: '50%', transform: 'translateX(-50%)' }} />
+        <div className="relative z-10 flex flex-col min-h-screen px-4 py-8">
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={() => navigate('/perfil')} className="flex items-center gap-2 transition-opacity hover:opacity-70 active:scale-95" style={{ color: '#FFC107' }}>
+              <ArrowLeft size={20} /><span className="text-sm font-bold">Regresar al Perfil</span>
+            </button>
+            <div className="flex items-center gap-2">
+              <Video size={14} style={{ color: '#FFC107' }} />
+              <span className="text-xs font-extrabold tracking-[0.2em] uppercase" style={{ color: '#FFC107' }}>Vídeos</span>
+              <Video size={14} style={{ color: '#FFC107' }} />
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: '#1A1A1A', border: '1px solid rgba(255,193,7,0.3)', boxShadow: '0 0 40px rgba(255,193,7,0.12)' }}>
+              <div className="mx-auto mb-4 w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,193,7,0.12)' }}>
+                <Lock size={24} style={{ color: '#FFC107' }} />
+              </div>
+              <h2 className="font-black text-xl mb-3" style={{ background: 'linear-gradient(135deg, #FFD700, #B8860B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Pasantía Completada</h2>
+              <p className="text-sm leading-relaxed mb-6" style={{ color: '#888888' }}>Has completado todas las tareas de la Pasantía. Para seguir calificando videos y obtener mayores ganancias, compra un nivel superior.</p>
+              <button onClick={() => navigate('/niveles')} className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300 active:scale-95" style={{ background: '#FFC107', color: '#000000', boxShadow: '0 4px 20px rgba(255,193,7,0.3)' }}>
+                <Zap size={16} /> Comprar Nivel Superior
+              </button>
+            </div>
+          </div>
         </div>
         <BottomNav />
       </div>

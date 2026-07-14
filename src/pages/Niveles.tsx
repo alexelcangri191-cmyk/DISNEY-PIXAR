@@ -34,6 +34,7 @@ interface ProgressData {
   saldo_personal: number;
   videos_vistos_hoy: number;
   videos_fecha: string;
+  pasantia_completada: boolean;
 }
 
 const formatMoney = (amount: number) => `$${amount.toLocaleString('es-CO')}`;
@@ -68,7 +69,7 @@ export default function Niveles() {
         const { data: progressData } = await supabase
           .from('user_progress')
           .select(
-            'nivel_activo, saldo_personal, videos_vistos_hoy, videos_fecha'
+            'nivel_activo, saldo_personal, videos_vistos_hoy, videos_fecha, pasantia_completada'
           )
           .eq('user_id', user.id)
           .maybeSingle();
@@ -116,7 +117,12 @@ export default function Niveles() {
 
         const { error } = await supabase
           .from('user_progress')
-          .update({ nivel_activo: level.id })
+          .update({
+            nivel_activo: level.id,
+            pasantia_completada: false,
+            videos_vistos_hoy: 0,
+            videos_fecha: today,
+          })
           .eq('user_id', user.id);
 
         if (error) {
@@ -126,10 +132,16 @@ export default function Niveles() {
         }
 
         setProgress((prev) =>
-          prev ? { ...prev, nivel_activo: level.id } : prev
+          prev ? {
+            ...prev,
+            nivel_activo: level.id,
+            pasantia_completada: false,
+            videos_vistos_hoy: 0,
+            videos_fecha: today,
+          } : prev
         );
         setSuccessMsg('Pasantía activada. ¡Empieza a calificar videos!');
-        setTimeout(dismissAlerts, 3000);
+        setTimeout(() => navigate('/videos'), 1200);
       } catch {
         setAlertMsg('Error de conexión al activar el nivel.');
       } finally {
@@ -189,6 +201,7 @@ export default function Niveles() {
           nivel_activo: level.id,
           videos_vistos_hoy: 0,
           videos_fecha: today,
+          pasantia_completada: false,
         })
         .eq('user_id', user.id);
 
@@ -215,13 +228,14 @@ export default function Niveles() {
               nivel_activo: level.id,
               videos_vistos_hoy: 0,
               videos_fecha: today,
+              pasantia_completada: false,
             }
           : prev
       );
       setSuccessMsg(
         `¡Nivel ${level.name} activado! Descontados ${formatMoney(investment)} de tu saldo.`
       );
-      setTimeout(dismissAlerts, 4000);
+      setTimeout(() => navigate('/videos'), 1200);
     } catch {
       setAlertMsg('Error de conexión al activar el nivel.');
     } finally {
