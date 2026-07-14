@@ -909,12 +909,12 @@ function PaidLevelCard({
             ) : canAfford ? (
               <>
                 <Wallet size={16} />
-                Comprar y Activar
+                Activar
               </>
             ) : (
               <>
-                <Lock size={16} />
-                Saldo Insuficiente
+                <Wallet size={16} />
+                Activar
               </>
             )}
           </button>

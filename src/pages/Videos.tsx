@@ -33,6 +33,11 @@ const MOCK_VIDEOS = [
   { id: 8, title: 'Diversificación de ingresos', duration: '4:20' },
   { id: 9, title: 'Análisis de mercado diario', duration: '2:50' },
   { id: 10, title: 'Rendimiento y métricas clave', duration: '3:10' },
+  { id: 11, title: 'Gestión de riesgo financiero', duration: '4:15' },
+  { id: 12, title: 'Oportunidades de crecimiento', duration: '3:25' },
+  { id: 13, title: 'Optimización de ganancias', duration: '4:40' },
+  { id: 14, title: 'Tendencias del mercado actual', duration: '3:55' },
+  { id: 15, title: 'Estrategias avanzadas de inversión', duration: '5:10' },
 ];
 
 export default function Videos() {
@@ -257,7 +262,7 @@ export default function Videos() {
             <span className="text-xs font-extrabold tracking-[0.2em] uppercase" style={{ color: '#FFC107' }}>Videos Disponibles</span>
           </div>
           <div className="flex flex-col gap-3">
-            {MOCK_VIDEOS.map((video) => {
+            {MOCK_VIDEOS.slice(0, level?.daily_tasks ?? 5).map((video) => {
               const isCompleted = completedToday.has(video.id);
               const isCurrentlyWatching = watchingVideo === video.id;
               const canWatch = !allTasksDone && !isCompleted && watchingVideo === null;
