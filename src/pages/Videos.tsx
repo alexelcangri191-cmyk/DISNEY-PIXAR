@@ -38,6 +38,21 @@ const MOCK_VIDEOS = [
   { id: 13, title: 'Optimización de ganancias', duration: '4:40' },
   { id: 14, title: 'Tendencias del mercado actual', duration: '3:55' },
   { id: 15, title: 'Estrategias avanzadas de inversión', duration: '5:10' },
+  { id: 16, title: 'Fundamentos del trading moderno', duration: '4:05' },
+  { id: 17, title: 'Análisis técnico paso a paso', duration: '3:50' },
+  { id: 18, title: 'Gestión de portafolios', duration: '4:30' },
+  { id: 19, title: 'Psicología del inversor', duration: '3:20' },
+  { id: 20, title: 'Mercados emergentes', duration: '4:50' },
+  { id: 21, title: 'Inversión a largo plazo', duration: '3:35' },
+  { id: 22, title: 'Compound interest explained', duration: '4:10' },
+  { id: 23, title: ' hedge funds y alternativas', duration: '3:40' },
+  { id: 24, title: 'Macroeconomía para inversores', duration: '5:05' },
+  { id: 25, title: 'Indicadores económicos clave', duration: '3:00' },
+  { id: 26, title: 'Flujos de caja y valoración', duration: '4:25' },
+  { id: 27, title: 'Renta fija vs renta variable', duration: '3:30' },
+  { id: 28, title: 'Criptomonedas y blockchain', duration: '4:45' },
+  { id: 29, title: 'Fondos indexados y ETFs', duration: '3:15' },
+  { id: 30, title: 'Plan de jubilación e inversión', duration: '4:55' },
 ];
 
 export default function Videos() {
