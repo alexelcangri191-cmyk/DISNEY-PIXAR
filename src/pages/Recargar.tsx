@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, ChevronDown, Check, Wallet, Send } from 'lucide-react';
+import { ArrowLeft, Clock, ChevronDown, Check, Wallet, Send, Info } from 'lucide-react';
 
 const DIAS_SEMANA = [
   'Domingo',
@@ -427,6 +427,62 @@ export default function Recargar() {
             <Send size={18} />
             <span>Enviar</span>
           </button>
+        </div>
+
+        {/* Información de Recargas Block */}
+        <div
+          className="w-full max-w-lg mx-auto mb-6 rounded-2xl overflow-hidden"
+          style={{
+            background: '#1A1A1A',
+            border: '1px solid rgba(255,193,7,0.15)',
+            boxShadow: '0 0 30px rgba(255,193,7,0.08)',
+          }}
+        >
+          <div className="flex">
+            {/* Left accent bar */}
+            <div
+              className="flex-shrink-0 w-1.5"
+              style={{
+                background:
+                  'linear-gradient(180deg, #FFD700, #FFC107, #B8860B)',
+              }}
+            />
+            <div className="flex-1 p-5 flex flex-col gap-4">
+              {/* Title */}
+              <div className="flex items-center gap-2">
+                <Info size={16} style={{ color: '#FFC107' }} />
+                <h2
+                  className="font-bold text-sm tracking-wide"
+                  style={{ color: '#FFC107' }}
+                >
+                  Información de Recargas
+                </h2>
+              </div>
+
+              {/* Info points */}
+              <ul className="flex flex-col gap-3">
+                {[
+                  'El pago se procesará exclusivamente por Nequi.',
+                  'Seleccione el monto, elija un método de pago y confirme dándole a enviar para continuar con los pasos a seguir con la operación.',
+                  'Tu saldo se reflejará en el transcurso de 15 minutos a 30 minutos mientras se realiza la verificación correcta del pago y se reflejará en tu billetera personal.',
+                  'Verificar que el monto seleccionado a enviar sea el que usted ha escogido para activar el nivel de su preferencia.',
+                ].map((texto, i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <span
+                      className="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full"
+                      style={{ background: '#FFC107' }}
+                    />
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: '#AAAAAA' }}
+                    >
+                      {texto}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
