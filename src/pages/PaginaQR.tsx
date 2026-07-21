@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Wrench } from 'lucide-react';
+import { ArrowLeft, Sparkles, Wrench, Info, AlertTriangle } from 'lucide-react';
 
 export default function PaginaQR() {
   const navigate = useNavigate();
@@ -78,6 +78,101 @@ export default function PaginaQR() {
             </h1>
           </div>
         </header>
+
+        {/* Información y Pasos de Recarga */}
+        <div className="w-full max-w-lg mx-auto mb-6">
+          {/* Title section */}
+          <div className="flex items-center gap-2 mb-1 px-1">
+            <Info size={16} style={{ color: '#FFC107' }} />
+            <h2
+              className="font-black text-lg tracking-tight"
+              style={{
+                background:
+                  'linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #B8860B 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              Información
+            </h2>
+          </div>
+          <p
+            className="text-xs font-bold uppercase tracking-wider mb-4 px-1"
+            style={{ color: '#888888' }}
+          >
+            Pasos para tu recarga
+          </p>
+
+          {/* Steps card */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(255,193,7,0.15)',
+              boxShadow: '0 0 30px rgba(255,193,7,0.08)',
+            }}
+          >
+            <div className="flex">
+              {/* Left accent bar */}
+              <div
+                className="flex-shrink-0 w-1.5"
+                style={{
+                  background:
+                    'linear-gradient(180deg, #FFD700, #FFC107, #B8860B)',
+                }}
+              />
+              <div className="flex-1 p-5 flex flex-col gap-4">
+                {[
+                  'Abre tu aplicación de Nequi en tu celular',
+                  'Escanea el código QR que está a continuación e introduce el importe indicado',
+                  'Una vez completada la transferencia y que sea exitosa, ingresa el código de referencia que te arroja el envío',
+                  'Al ingresar el número del voucher de abajo, le das a la opción entregar y espera el tiempo indicado para que tu recarga sea activada en la app.',
+                ].map((paso, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span
+                      className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-black text-xs"
+                      style={{
+                        background: 'rgba(255,193,7,0.12)',
+                        border: '1px solid rgba(255,193,7,0.4)',
+                        color: '#FFC107',
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    <p
+                      className="text-sm leading-relaxed pt-0.5"
+                      style={{ color: '#AAAAAA' }}
+                    >
+                      {paso}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* NOTE callout */}
+          <div
+            className="mt-4 rounded-2xl p-4 flex items-start gap-3"
+            style={{
+              background: 'rgba(255,193,7,0.06)',
+              border: '1px solid rgba(255,193,7,0.3)',
+              boxShadow: '0 0 20px rgba(255,193,7,0.08)',
+            }}
+          >
+            <AlertTriangle size={18} style={{ color: '#FFC107' }} />
+            <p
+              className="text-xs leading-relaxed"
+              style={{ color: '#CCCCCC' }}
+            >
+              <span className="font-black" style={{ color: '#FFC107' }}>
+                NOTA:{' '}
+              </span>
+              asegúrate de rellenar correctamente la Referencia con los datos emitidos de tu pago del voucher, para evitar demoras y que tu dinero llegue con más rapidez y facilidad a la billetera de tu app.
+            </p>
+          </div>
+        </div>
 
         {/* Under Construction placeholder */}
         <div className="flex-1 flex items-center justify-center px-4">
