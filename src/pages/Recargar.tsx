@@ -398,7 +398,11 @@ export default function Recargar() {
         {/* Send Button Block */}
         <div className="w-full max-w-lg mx-auto mt-8 mb-6">
           <button
-            onClick={() => navigate('/recargas/qr')}
+            onClick={() =>
+              navigate('/recargas/qr', {
+                state: { monto: montoSeleccionado, metodo: metodoPago },
+              })
+            }
             disabled={!puedeEnviar}
             className="w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-bold text-base transition-all duration-300 active:scale-[0.98]"
             style={{
