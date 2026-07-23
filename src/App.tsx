@@ -13,6 +13,7 @@ import FormasDeGanar from './pages/FormasDeGanar';
 import Videos from './pages/Videos';
 import Soporte from './pages/Soporte';
 import Niveles from './pages/Niveles';
+import Retiros from './pages/Retiros';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -24,7 +25,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         <Route path="/recargar" element={<ProtectedRoute><Recargar /></ProtectedRoute>} />
-        <Route path="/retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
+        <Route path="/retiros" element={<ProtectedRoute><Retiros /></ProtectedRoute>} />
         <Route path="/historial-recargas" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/historial-retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/cuenta-bancaria" element={<ProtectedRoute><CuentaBancaria /></ProtectedRoute>} />
