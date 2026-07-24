@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, ChevronDown, Check, Lock } from 'lucide-react';
+import { ArrowLeft, Info, ChevronDown, Check, Lock, Send, CreditCard, CheckCircle2, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const MONTOS = [
   30000, 80000, 210000,
@@ -11,7 +12,16 @@ const MONTOS = [
 const METODOS = ['Nequi', 'Bancolombia'] as const;
 
 function formatCOP(value: number): string {
-  return `$${value.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `${value.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+function formatHoraSolicitud(fecha: Date): string {
+  let horas = fecha.getHours();
+  const minutos = fecha.getMinutes().toString().padStart(2, '0');
+  const ampm = horas >= 12 ? 'PM' : 'AM';
+  horas = horas % 12;
+  horas = horas ? horas : 12;
+  return `${horas}:${minutos} ${ampm}`;
 }
 
 export default function Retiros() {
@@ -19,6 +29,89 @@ export default function Retiros() {
   const [montoSeleccionado, setMontoSeleccionado] = useState<number | null>(null);
   const [metodoSeleccionado, setMetodoSeleccionado] = useState<string | null>(null);
   const [dropdownAbierto, setDropdownAbierto] = useState(false);
+  const [cuentaBancaria, setCuentaBancaria] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [exito, setExito] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const montoValido = montoSeleccionado !== null && montoSeleccionado > 0;
+  const cuentaValida = cuentaBancaria.trim().length > 0;
+  const puedeEnviar = montoValido && cuentaValida && !enviando && !exito;
+
+  async function handleEnviar() {
+    if (!puedeEnviar || montoSeleccionado === null) return;
+    setErrorMsg(null);
+    setEnviando(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setErrorMsg('Debes iniciar sesión para realizar el retiro.');
+        setEnviando(false);
+        return;
+      }
+
+      // Obtener nombre del usuario y saldo actual de ingresos
+      const { data: usuarioData } = await supabase
+        .from('users')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const { data: progData } = await supabase
+        .from('user_progress')
+        .select('saldo_ingresos')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const saldoActual = Number(progData?.saldo_ingresos) || 0;
+      if (saldoActual < montoSeleccionado) {
+        setErrorMsg(`Saldo insuficiente en tu billetera de ingresos. Tienes ${formatCOP(saldoActual)}.`);
+        setEnviando(false);
+        return;
+      }
+
+      const ahora = new Date();
+      const fechaStr = ahora.toISOString().slice(0, 10);
+      const horaStr = formatHoraSolicitud(ahora);
+
+      // 1. Registrar el retiro en la tabla retiros
+      const { error: insertError } = await supabase.from('retiros').insert({
+        username: (usuarioData as { full_name: string } | null)?.full_name ?? '',
+        amount: montoSeleccionado,
+        date: fechaStr,
+        time: horaStr,
+        account_number: cuentaBancaria.trim(),
+        status: 'pendiente',
+      });
+
+      if (insertError) {
+        setErrorMsg('Error al registrar el retiro: ' + insertError.message);
+        setEnviando(false);
+        return;
+      }
+
+      // 2. Descontar el monto de la billetera de ingresos
+      const nuevoSaldo = saldoActual - montoSeleccionado;
+      const { error: updateError } = await supabase
+        .from('user_progress')
+        .update({ saldo_ingresos: nuevoSaldo })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        // El retiro quedó registrado pero el saldo no se descontó
+        setErrorMsg('El retiro fue registrado pero hubo un error al actualizar tu saldo. Contacta a soporte.');
+        setEnviando(false);
+        return;
+      }
+
+      setExito(true);
+      setTimeout(() => navigate('/perfil'), 1800);
+    } catch {
+      setErrorMsg('Error de conexión. Intenta de nuevo.');
+      setEnviando(false);
+    }
+  }
 
   const puntos = [
     'Los retiros estarán disponible únicamente de lunes a viernes en horario de oficina hora colombiana de 08:00 am a 12:00 pm y de 02:00 pm a 06:00 pm (hora colombiana) fuera de estos días y horas nuestro personal y el sistema no procesara ninguna solicitud.',
@@ -350,6 +443,173 @@ export default function Retiros() {
             )}
           </div>
         </div>
+
+        {/* CUENTA BANCARIA */}
+        <div className="w-full max-w-lg mx-auto mt-8">
+          <div className="flex items-center gap-2 mb-4 px-1">
+            <span
+              className="text-xs font-extrabold tracking-[0.2em] uppercase"
+              style={{ color: '#FFC107' }}
+            >
+              Cuenta Bancaria
+            </span>
+          </div>
+
+          <div className="relative">
+            <div
+              className="absolute left-4 top-1/2 -translate-y-1/2"
+              style={{ color: '#888888' }}
+            >
+              <CreditCard size={18} />
+            </div>
+            <input
+              type="text"
+              placeholder="Ingresa tu número de cuenta (Manual)"
+              value={cuentaBancaria}
+              onChange={(e) => setCuentaBancaria(e.target.value)}
+              disabled={enviando || exito}
+              className="w-full rounded-xl text-sm text-white placeholder-gray-500 transition-all duration-300 focus:outline-none disabled:opacity-50"
+              style={{
+                background: '#1A1A1A',
+                border: `1px solid ${
+                  cuentaValida
+                    ? 'rgba(255,193,7,0.4)'
+                    : 'rgba(255,193,7,0.15)'
+                }`,
+                boxShadow: cuentaValida
+                  ? '0 0 16px rgba(255,193,7,0.1)'
+                  : '0 0 12px rgba(255,193,7,0.04)',
+                padding: '16px 18px 16px 48px',
+              }}
+              onFocus={(e) => {
+                (e.target as HTMLInputElement).style.borderColor =
+                  'rgba(255,193,7,0.6)';
+                (e.target as HTMLInputElement).style.boxShadow =
+                  '0 0 16px rgba(255,193,7,0.15)';
+              }}
+              onBlur={(e) => {
+                (e.target as HTMLInputElement).style.borderColor = cuentaValida
+                  ? 'rgba(255,193,7,0.4)'
+                  : 'rgba(255,193,7,0.15)';
+                (e.target as HTMLInputElement).style.boxShadow = cuentaValida
+                  ? '0 0 16px rgba(255,193,7,0.1)'
+                  : '0 0 12px rgba(255,193,7,0.04)';
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Error / Success messages */}
+        {errorMsg && (
+          <div className="w-full max-w-lg mx-auto mt-4">
+            <div
+              className="rounded-2xl p-4 flex items-center gap-3"
+              style={{
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.4)',
+              }}
+            >
+              <Info size={18} style={{ color: '#EF4444' }} />
+              <span className="text-sm font-bold" style={{ color: '#EF4444' }}>
+                {errorMsg}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* BOTÓN ENVIAR */}
+        <div className="w-full max-w-lg mx-auto mt-8 mb-6">
+          <button
+            onClick={handleEnviar}
+            disabled={!puedeEnviar}
+            className="w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-extrabold text-base tracking-wide transition-all duration-300 active:scale-95"
+            style={{
+              background: puedeEnviar
+                ? '#FFC107'
+                : '#1A1A1A',
+              color: puedeEnviar ? '#000000' : '#555555',
+              border: `1px solid ${
+                puedeEnviar
+                  ? 'rgba(255,193,7,0.6)'
+                  : 'rgba(255,193,7,0.1)'
+              }`,
+              boxShadow: puedeEnviar
+                ? '0 4px 24px rgba(255,193,7,0.35)'
+                : 'none',
+              cursor: puedeEnviar ? 'pointer' : 'not-allowed',
+              opacity: puedeEnviar ? 1 : 0.5,
+            }}
+            onMouseEnter={(e) => {
+              if (puedeEnviar) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#FFD700';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                  '0 6px 36px rgba(255,193,7,0.6)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (puedeEnviar) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#FFC107';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                  '0 4px 24px rgba(255,193,7,0.35)';
+              }
+            }}
+          >
+            {enviando ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Enviando...
+              </>
+            ) : exito ? (
+              <>
+                <CheckCircle2 size={18} />
+                Operación Exitosa
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                Enviar
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Modal de Operación Exitosa */}
+        {exito && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+          >
+            <div
+              className="w-full max-w-sm rounded-3xl p-8 text-center"
+              style={{
+                background: '#1A1A1A',
+                border: '1px solid rgba(34,197,94,0.5)',
+                boxShadow: '0 0 60px rgba(34,197,94,0.25)',
+              }}
+            >
+              <div
+                className="mx-auto mb-4 w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{ background: 'rgba(34,197,94,0.12)' }}
+              >
+                <CheckCircle2 size={32} style={{ color: '#22C55E' }} />
+              </div>
+              <h3
+                className="font-black text-xl mb-2"
+                style={{ color: '#22C55E' }}
+              >
+                Operación Exitosa
+              </h3>
+              <p className="text-sm" style={{ color: '#888888' }}>
+                Tu solicitud de retiro por {montoSeleccionado !== null ? formatCOP(montoSeleccionado) : ''} ha sido registrada y está pendiente de verificación.
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-5">
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#22C55E', animationDelay: '0ms' }} />
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#22C55E', animationDelay: '150ms' }} />
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#22C55E', animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
