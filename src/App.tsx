@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import UnderConstruction from './pages/UnderConstruction';
 import Recargar from './pages/Recargar';
+import Retiros from './pages/Retiros';
 import CuentaBancaria from './pages/CuentaBancaria';
 import MiEquipo from './pages/MiEquipo';
 import SobreNosotros from './pages/SobreNosotros';
@@ -24,7 +25,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         <Route path="/recargar" element={<ProtectedRoute><Recargar /></ProtectedRoute>} />
-        <Route path="/retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
+        <Route path="/retiros" element={<ProtectedRoute><Retiros /></ProtectedRoute>} />
         <Route path="/historial-recargas" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/historial-retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/cuenta-bancaria" element={<ProtectedRoute><CuentaBancaria /></ProtectedRoute>} />
