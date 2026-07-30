@@ -1,6 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, ChevronDown, Check, Wallet, Send } from 'lucide-react';
+import { ArrowLeft, Clock, ChevronDown, Check, Wallet } from 'lucide-react';
+
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  opacity: number;
+  delay: number;
+}
+
+function generateParticles(count: number): Particle[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 3 + 1,
+    speed: Math.random() * 20 + 15,
+    opacity: Math.random() * 0.6 + 0.2,
+    delay: Math.random() * 10,
+  }));
+}
 
 const DIAS_SEMANA = [
   'Domingo',
@@ -21,33 +43,26 @@ function formatearHora(fecha: Date): string {
   return `${horas}:${minutos} ${ampm}`;
 }
 
-const MONTOS = [
-  150000, 480000, 1300000,
-  4700000, 12800000, 31000000,
-  67200000, 135000000, 325000000,
-];
-
-const METODOS_PAGO = ['Nequi', 'Bancolombia'];
-
-const formatMoney = (amount: number) =>
-  `$${amount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-
 export default function Recargar() {
   const navigate = useNavigate();
   const [horaActual, setHoraActual] = useState(new Date());
+  const [particles] = useState(() => generateParticles(60));
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [montoSeleccionado, setMontoSeleccionado] = useState<number | null>(null);
   const [metodoPago, setMetodoPago] = useState<string>('');
   const [dropdownAbierto, setDropdownAbierto] = useState(false);
-  const [botonHover, setBotonHover] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setHoraActual(new Date());
-    const interval = setInterval(() => {
-      setHoraActual(new Date());
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  const MONTOS = [
+    150000, 480000, 1300000,
+    4700000, 12800000, 31000000,
+    67200000, 135000000, 325000000,
+  ];
+
+  const METODOS_PAGO = ['Nequi', 'Bancolombia'];
+
+  const formatMoney = (amount: number) =>
+    `${amount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -59,17 +74,92 @@ export default function Recargar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    setHoraActual(new Date());
+    const interval = setInterval(() => {
+      setHoraActual(new Date());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    const stars: { x: number; y: number; r: number; alpha: number; speed: number }[] = [];
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < 120; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.5 + 0.3,
+        alpha: Math.random(),
+        speed: Math.random() * 0.005 + 0.002,
+      });
+    }
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach((s) => {
+        s.alpha += s.speed;
+        if (s.alpha > 1 || s.alpha < 0) s.speed *= -1;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 193, 7, ${s.alpha * 0.7})`;
+        ctx.fill();
+      });
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
   const diaSemana = DIAS_SEMANA[horaActual.getDay()];
   const horaTexto = formatearHora(horaActual);
-
-  const puedeEnviar = montoSeleccionado !== null && metodoPago !== '';
 
   return (
     <div
       className="relative min-h-screen overflow-x-hidden"
       style={{ background: '#000000' }}
     >
-      {/* Ambient glow - same as Welcome */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{ opacity: 0.8 }}
+      />
+
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {particles.map((p) => (
+          <div
+            key={p.id}
+            className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              background: '#FFC107',
+              opacity: p.opacity,
+              animation: `floatUp ${p.speed}s ${p.delay}s linear infinite`,
+            }}
+          />
+        ))}
+      </div>
+
       <div
         className="fixed pointer-events-none z-0"
         style={{
@@ -394,41 +484,16 @@ export default function Recargar() {
             )}
           </div>
         </div>
-
-        {/* Send Button Block */}
-        <div className="w-full max-w-lg mx-auto mt-8 mb-6">
-          <button
-            onClick={() => navigate('/recargas/qr')}
-            disabled={!puedeEnviar}
-            className="w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-bold text-base transition-all duration-300 active:scale-[0.98]"
-            style={{
-              background: puedeEnviar
-                ? botonHover
-                  ? 'linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #B8860B 100%)'
-                  : 'linear-gradient(135deg, #FFC107 0%, #FFD700 50%, #B8860B 100%)'
-                : '#1A1A1A',
-              color: puedeEnviar ? '#000000' : '#555555',
-              border: `1px solid ${
-                puedeEnviar
-                  ? 'rgba(255,193,7,0.6)'
-                  : 'rgba(255,193,7,0.1)'
-              }`,
-              boxShadow: puedeEnviar
-                ? botonHover
-                  ? '0 0 32px rgba(255,193,7,0.4), 0 4px 16px rgba(255,193,7,0.2)'
-                  : '0 0 24px rgba(255,193,7,0.25), 0 4px 12px rgba(0,0,0,0.3)'
-                : 'none',
-              cursor: puedeEnviar ? 'pointer' : 'not-allowed',
-              opacity: puedeEnviar ? 1 : 0.5,
-            }}
-            onMouseEnter={() => setBotonHover(true)}
-            onMouseLeave={() => setBotonHover(false)}
-          >
-            <Send size={18} />
-            <span>Enviar</span>
-          </button>
-        </div>
       </div>
+
+      <style>{`
+        @keyframes floatUp {
+          0%   { transform: translateY(0px) scale(1); opacity: 0; }
+          10%  { opacity: 1; }
+          90%  { opacity: 0.6; }
+          100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
