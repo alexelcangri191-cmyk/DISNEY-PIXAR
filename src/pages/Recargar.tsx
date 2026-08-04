@@ -1,28 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, ChevronDown, Check, Wallet } from 'lucide-react';
-
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  speed: number;
-  opacity: number;
-  delay: number;
-}
-
-function generateParticles(count: number): Particle[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 3 + 1,
-    speed: Math.random() * 20 + 15,
-    opacity: Math.random() * 0.6 + 0.2,
-    delay: Math.random() * 10,
-  }));
-}
+import { ArrowLeft, Clock, ChevronDown, Check, Wallet, Send, Info } from 'lucide-react';
 
 const DIAS_SEMANA = [
   'Domingo',
@@ -43,26 +21,33 @@ function formatearHora(fecha: Date): string {
   return `${horas}:${minutos} ${ampm}`;
 }
 
+const MONTOS = [
+  150000, 480000, 1300000,
+  4700000, 12800000, 31000000,
+  67200000, 135000000, 325000000,
+];
+
+const METODOS_PAGO = ['Nequi', 'Bancolombia'];
+
+const formatMoney = (amount: number) =>
+  `$${amount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
 export default function Recargar() {
   const navigate = useNavigate();
   const [horaActual, setHoraActual] = useState(new Date());
-  const [particles] = useState(() => generateParticles(60));
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [montoSeleccionado, setMontoSeleccionado] = useState<number | null>(null);
   const [metodoPago, setMetodoPago] = useState<string>('');
   const [dropdownAbierto, setDropdownAbierto] = useState(false);
+  const [botonHover, setBotonHover] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const MONTOS = [
-    150000, 480000, 1300000,
-    4700000, 12800000, 31000000,
-    67200000, 135000000, 325000000,
-  ];
-
-  const METODOS_PAGO = ['Nequi', 'Bancolombia'];
-
-  const formatMoney = (amount: number) =>
-    `${amount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  useEffect(() => {
+    setHoraActual(new Date());
+    const interval = setInterval(() => {
+      setHoraActual(new Date());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -74,92 +59,17 @@ export default function Recargar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  useEffect(() => {
-    setHoraActual(new Date());
-    const interval = setInterval(() => {
-      setHoraActual(new Date());
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animId: number;
-    const stars: { x: number; y: number; r: number; alpha: number; speed: number }[] = [];
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    for (let i = 0; i < 120; i++) {
-      stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 1.5 + 0.3,
-        alpha: Math.random(),
-        speed: Math.random() * 0.005 + 0.002,
-      });
-    }
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      stars.forEach((s) => {
-        s.alpha += s.speed;
-        if (s.alpha > 1 || s.alpha < 0) s.speed *= -1;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 193, 7, ${s.alpha * 0.7})`;
-        ctx.fill();
-      });
-      animId = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
   const diaSemana = DIAS_SEMANA[horaActual.getDay()];
   const horaTexto = formatearHora(horaActual);
+
+  const puedeEnviar = montoSeleccionado !== null && metodoPago !== '';
 
   return (
     <div
       className="relative min-h-screen overflow-x-hidden"
       style={{ background: '#000000' }}
     >
-      <canvas
-        ref={canvasRef}
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{ opacity: 0.8 }}
-      />
-
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {particles.map((p) => (
-          <div
-            key={p.id}
-            className="absolute rounded-full"
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: `${p.size}px`,
-              height: `${p.size}px`,
-              background: '#FFC107',
-              opacity: p.opacity,
-              animation: `floatUp ${p.speed}s ${p.delay}s linear infinite`,
-            }}
-          />
-        ))}
-      </div>
-
+      {/* Ambient glow - same as Welcome */}
       <div
         className="fixed pointer-events-none z-0"
         style={{
@@ -484,16 +394,101 @@ export default function Recargar() {
             )}
           </div>
         </div>
-      </div>
 
-      <style>{`
-        @keyframes floatUp {
-          0%   { transform: translateY(0px) scale(1); opacity: 0; }
-          10%  { opacity: 1; }
-          90%  { opacity: 0.6; }
-          100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
-        }
-      `}</style>
+        {/* Send Button Block */}
+        <div className="w-full max-w-lg mx-auto mt-8 mb-6">
+          <button
+            onClick={() =>
+              navigate('/recargas/qr', {
+                state: { monto: montoSeleccionado, metodo: metodoPago },
+              })
+            }
+            disabled={!puedeEnviar}
+            className="w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-bold text-base transition-all duration-300 active:scale-[0.98]"
+            style={{
+              background: puedeEnviar
+                ? botonHover
+                  ? 'linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #B8860B 100%)'
+                  : 'linear-gradient(135deg, #FFC107 0%, #FFD700 50%, #B8860B 100%)'
+                : '#1A1A1A',
+              color: puedeEnviar ? '#000000' : '#555555',
+              border: `1px solid ${
+                puedeEnviar
+                  ? 'rgba(255,193,7,0.6)'
+                  : 'rgba(255,193,7,0.1)'
+              }`,
+              boxShadow: puedeEnviar
+                ? botonHover
+                  ? '0 0 32px rgba(255,193,7,0.4), 0 4px 16px rgba(255,193,7,0.2)'
+                  : '0 0 24px rgba(255,193,7,0.25), 0 4px 12px rgba(0,0,0,0.3)'
+                : 'none',
+              cursor: puedeEnviar ? 'pointer' : 'not-allowed',
+              opacity: puedeEnviar ? 1 : 0.5,
+            }}
+            onMouseEnter={() => setBotonHover(true)}
+            onMouseLeave={() => setBotonHover(false)}
+          >
+            <Send size={18} />
+            <span>Enviar</span>
+          </button>
+        </div>
+
+        {/* Información de Recargas Block */}
+        <div
+          className="w-full max-w-lg mx-auto mb-6 rounded-2xl overflow-hidden"
+          style={{
+            background: '#1A1A1A',
+            border: '1px solid rgba(255,193,7,0.15)',
+            boxShadow: '0 0 30px rgba(255,193,7,0.08)',
+          }}
+        >
+          <div className="flex">
+            {/* Left accent bar */}
+            <div
+              className="flex-shrink-0 w-1.5"
+              style={{
+                background:
+                  'linear-gradient(180deg, #FFD700, #FFC107, #B8860B)',
+              }}
+            />
+            <div className="flex-1 p-5 flex flex-col gap-4">
+              {/* Title */}
+              <div className="flex items-center gap-2">
+                <Info size={16} style={{ color: '#FFC107' }} />
+                <h2
+                  className="font-bold text-sm tracking-wide"
+                  style={{ color: '#FFC107' }}
+                >
+                  Información de Recargas
+                </h2>
+              </div>
+
+              {/* Info points */}
+              <ul className="flex flex-col gap-3">
+                {[
+                  'El pago se procesará exclusivamente por Nequi.',
+                  'Seleccione el monto, elija un método de pago y confirme dándole a enviar para continuar con los pasos a seguir con la operación.',
+                  'Tu saldo se reflejará en el transcurso de 15 minutos a 30 minutos mientras se realiza la verificación correcta del pago y se reflejará en tu billetera personal.',
+                  'Verificar que el monto seleccionado a enviar sea el que usted ha escogido para activar el nivel de su preferencia.',
+                ].map((texto, i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <span
+                      className="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full"
+                      style={{ background: '#FFC107' }}
+                    />
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: '#AAAAAA' }}
+                    >
+                      {texto}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
