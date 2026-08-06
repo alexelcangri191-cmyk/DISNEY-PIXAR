@@ -7,7 +7,6 @@ import UnderConstruction from './pages/UnderConstruction';
 import Recargar from './pages/Recargar';
 import PaginaQR from './pages/PaginaQR';
 import Retiros from './pages/Retiros';
-import CuentaBancaria from './pages/CuentaBancaria';
 import MiEquipo from './pages/MiEquipo';
 import SobreNosotros from './pages/SobreNosotros';
 import InformacionPersonal from './pages/InformacionPersonal';
@@ -30,7 +29,7 @@ export default function App() {
         <Route path="/retiros" element={<ProtectedRoute><Retiros /></ProtectedRoute>} />
         <Route path="/historial-recargas" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/historial-retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
-        <Route path="/cuenta-bancaria" element={<ProtectedRoute><CuentaBancaria /></ProtectedRoute>} />
+        <Route path="/cuenta-bancaria" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/mi-equipo" element={<ProtectedRoute><MiEquipo /></ProtectedRoute>} />
         <Route path="/sobre-nosotros" element={<ProtectedRoute><SobreNosotros /></ProtectedRoute>} />
         <Route path="/informacion-personal" element={<ProtectedRoute><InformacionPersonal /></ProtectedRoute>} />
