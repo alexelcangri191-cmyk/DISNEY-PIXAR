@@ -419,7 +419,7 @@ export default function Perfil() {
             <MenuOption
               icon={<CreditCard size={20} />}
               label="Ruleta de la Fortuna"
-              onClick={() => navigate('/cuenta-bancaria')}
+              onClick={() => navigate('/ruleta-fortuna')}
             />
             <MenuOption
               icon={<Users size={20} />}

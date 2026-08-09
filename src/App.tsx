@@ -14,6 +14,7 @@ import FormasDeGanar from './pages/FormasDeGanar';
 import Videos from './pages/Videos';
 import Soporte from './pages/Soporte';
 import Niveles from './pages/Niveles';
+import RuletaFortuna from './pages/RuletaFortuna';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/retiros" element={<ProtectedRoute><Retiros /></ProtectedRoute>} />
         <Route path="/historial-recargas" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/historial-retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
+        <Route path="/ruleta-fortuna" element={<ProtectedRoute><RuletaFortuna /></ProtectedRoute>} />
         <Route path="/cuenta-bancaria" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/mi-equipo" element={<ProtectedRoute><MiEquipo /></ProtectedRoute>} />
         <Route path="/sobre-nosotros" element={<ProtectedRoute><SobreNosotros /></ProtectedRoute>} />
