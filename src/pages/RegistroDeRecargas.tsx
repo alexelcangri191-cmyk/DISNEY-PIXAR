@@ -29,7 +29,7 @@ function generateParticles(count: number): Particle[] {
 interface Recarga {
   id: string;
   user_id: string;
-  amount: number;
+  monto: number;
   status: string;
   created_at: string;
 }
@@ -116,7 +116,7 @@ export default function RegistroDeRecargas() {
       const [recargasRes, progressRes] = await Promise.all([
         supabase
           .from('recargas')
-          .select('id, user_id, amount, status, created_at')
+          .select('id, user_id, monto, status, created_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
         supabase
@@ -354,7 +354,7 @@ export default function RegistroDeRecargas() {
                 </div>
               ) : (
                 recargas.map((recarga, index) => {
-                  const isExitoso = recarga.status === 'exitoso';
+                  const isExitoso = recarga.status.toLowerCase() === 'exitoso';
                   const shortId = `#${recarga.id.slice(-3).toUpperCase()}`;
                   return (
                     <div
@@ -391,7 +391,7 @@ export default function RegistroDeRecargas() {
                           className="text-sm font-black"
                           style={{ color: '#FFC107' }}
                         >
-                          {formatMoney(Number(recarga.amount) || 0)}
+                          {formatMoney(Number(recarga.monto) || 0)}
                         </p>
                         {isExitoso ? (
                           <span

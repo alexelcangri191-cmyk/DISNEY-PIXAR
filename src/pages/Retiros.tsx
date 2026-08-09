@@ -86,7 +86,7 @@ export default function Retiros() {
         date: fecha,
         time: hora,
         account_number: numeroCuenta.trim(),
-        status: 'Pendiente',
+        status: 'pendiente',
       });
 
       if (retiroError) {
