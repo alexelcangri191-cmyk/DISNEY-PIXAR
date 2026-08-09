@@ -9,6 +9,7 @@ import PaginaQR from './pages/PaginaQR';
 import Retiros from './pages/Retiros';
 import MiEquipo from './pages/MiEquipo';
 import SobreNosotros from './pages/SobreNosotros';
+import RegistroDeRecargas from './pages/RegistroDeRecargas';
 import InformacionPersonal from './pages/InformacionPersonal';
 import FormasDeGanar from './pages/FormasDeGanar';
 import Videos from './pages/Videos';
@@ -28,7 +29,7 @@ export default function App() {
         <Route path="/recargar" element={<ProtectedRoute><Recargar /></ProtectedRoute>} />
         <Route path="/recargas/qr" element={<ProtectedRoute><PaginaQR /></ProtectedRoute>} />
         <Route path="/retiros" element={<ProtectedRoute><Retiros /></ProtectedRoute>} />
-        <Route path="/historial-recargas" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
+        <Route path="/historial-recargas" element={<ProtectedRoute><RegistroDeRecargas /></ProtectedRoute>} />
         <Route path="/historial-retiros" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
         <Route path="/ruleta-fortuna" element={<ProtectedRoute><RuletaFortuna /></ProtectedRoute>} />
         <Route path="/cuenta-bancaria" element={<ProtectedRoute><UnderConstruction /></ProtectedRoute>} />
