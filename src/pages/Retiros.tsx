@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,6 +11,8 @@ import {
   Loader2,
   CheckCircle2,
   X,
+  AlertTriangle,
+  Wallet,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -34,10 +36,26 @@ export default function Retiros() {
   const [numeroCuenta, setNumeroCuenta] = useState<string>('');
   const [enviando, setEnviando] = useState(false);
   const [modalExito, setModalExito] = useState(false);
+  const [saldoDisponible, setSaldoDisponible] = useState<number | null>(null);
+  const [errorSaldo, setErrorSaldo] = useState<string | null>(null);
 
   const montoValido = montoSeleccionado !== null && montoSeleccionado > 0;
   const cuentaValida = numeroCuenta.trim() !== '';
   const puedeEnviar = montoValido && cuentaValida && !enviando;
+
+  useEffect(() => {
+    async function fetchSaldo() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('user_progress')
+        .select('saldo_ingresos')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) setSaldoDisponible(Number(data.saldo_ingresos) || 0);
+    }
+    fetchSaldo();
+  }, []);
 
   const puntos = [
     'Los retiros estarán disponible únicamente de lunes a viernes en horario de oficina hora colombiana de 08:00 am a 12:00 pm y de 02:00 pm a 06:00 pm (hora colombiana) fuera de estos días y horas nuestro personal y el sistema no procesara ninguna solicitud.',
@@ -49,6 +67,7 @@ export default function Retiros() {
 
   async function handleEnviar() {
     if (!puedeEnviar) return;
+    setErrorSaldo(null);
     setEnviando(true);
 
     try {
@@ -56,6 +75,22 @@ export default function Retiros() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
+        setEnviando(false);
+        return;
+      }
+
+      // 0. Verificar saldo disponible ANTES de procesar
+      const { data: progressData } = await supabase
+        .from('user_progress')
+        .select('saldo_ingresos')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const saldoActual = Number((progressData as { saldo_ingresos: number } | null)?.saldo_ingresos || 0);
+      setSaldoDisponible(saldoActual);
+
+      if (saldoActual < (montoSeleccionado as number)) {
+        setErrorSaldo('Saldo insuficiente. Tu Billetera de Ingresos no tiene el monto suficiente para este retiro.');
         setEnviando(false);
         return;
       }
@@ -95,19 +130,14 @@ export default function Retiros() {
       }
 
       // 2. Descontar el monto de la billetera de ingresos
-      const { data: progressData } = await supabase
-        .from('user_progress')
-        .select('saldo_ingresos')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const saldoActual = Number((progressData as { saldo_ingresos: number } | null)?.saldo_ingresos || 0);
-      const nuevoSaldo = Math.max(0, saldoActual - (montoSeleccionado as number));
+      const nuevoSaldo = saldoActual - (montoSeleccionado as number);
 
       await supabase
         .from('user_progress')
         .update({ saldo_ingresos: nuevoSaldo, updated_at: new Date().toISOString() })
         .eq('user_id', user.id);
+
+      setSaldoDisponible(nuevoSaldo);
 
       // Mostrar modal de exito
       setModalExito(true);
@@ -243,6 +273,56 @@ export default function Retiros() {
             </div>
           </div>
         </div>
+
+        {/* SALDO DISPONIBLE */}
+        <div className="w-full max-w-lg mx-auto mt-6">
+          <div
+            className="rounded-2xl flex items-center justify-between"
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(255,193,7,0.2)',
+              boxShadow: '0 0 16px rgba(255,193,7,0.06)',
+              padding: '16px 18px',
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center"
+                style={{ background: 'rgba(255,193,7,0.1)' }}
+              >
+                <Wallet size={18} style={{ color: '#FFC107' }} />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#888888' }}>
+                Saldo Disponible
+              </span>
+            </div>
+            <span
+              className="text-lg font-black"
+              style={{ color: '#FFC107' }}
+            >
+              {saldoDisponible !== null ? formatCOP(saldoDisponible) : '...'}
+            </span>
+          </div>
+        </div>
+
+        {/* AVISO SALDO INSUFICIENTE */}
+        {errorSaldo && (
+          <div className="w-full max-w-lg mx-auto mt-4">
+            <div
+              className="rounded-2xl flex items-start gap-3 p-4"
+              style={{
+                background: 'rgba(239,68,68,0.08)',
+                border: '1px solid rgba(239,68,68,0.4)',
+                boxShadow: '0 0 20px rgba(239,68,68,0.12)',
+              }}
+            >
+              <AlertTriangle size={20} style={{ color: '#ef4444', flexShrink: 0, marginTop: 2 }} />
+              <p className="text-sm font-bold leading-relaxed" style={{ color: '#ef4444' }}>
+                {errorSaldo}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* SELECCIONA UN MONTO */}
         <div className="w-full max-w-lg mx-auto mt-8">
