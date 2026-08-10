@@ -139,14 +139,11 @@ export default function Retiros() {
 
       setSaldoDisponible(nuevoSaldo);
 
-      // Mostrar modal de exito
+      // Mostrar modal de exito y redirigir al perfil
       setModalExito(true);
       setEnviando(false);
 
-      // Limpiar campos
-      setNumeroCuenta('');
-      setMontoSeleccionado(null);
-      setMetodoSeleccionado(null);
+      setTimeout(() => navigate('/perfil'), 2000);
     } catch {
       setEnviando(false);
     }
@@ -629,7 +626,7 @@ export default function Retiros() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setModalExito(false)}
+          onClick={() => navigate('/perfil')}
         >
           <div
             className="w-full max-w-sm rounded-3xl p-8 flex flex-col items-center text-center"
@@ -641,7 +638,7 @@ export default function Retiros() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setModalExito(false)}
+              onClick={() => navigate('/perfil')}
               className="absolute top-4 right-4 transition-opacity hover:opacity-70"
               style={{ color: '#888888' }}
             >
@@ -673,7 +670,7 @@ export default function Retiros() {
             </p>
 
             <button
-              onClick={() => setModalExito(false)}
+              onClick={() => navigate('/perfil')}
               className="w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95"
               style={{
                 background: '#FFC107',
