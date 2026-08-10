@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Info, ShieldCheck, X, Gift, Lock, Clock } from 'lucide-react';
+import { ArrowLeft, Sparkles, Info, ShieldCheck, X, Gift, Lock, Clock, Loader2, CheckCircle2, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import BottomNav from '../components/BottomNav';
 
@@ -74,10 +74,10 @@ export default function RuletaFortuna() {
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // 'cargando' = verificando nivel | 'activando' = nivel J detectado, activando | 'activa' = desbloqueada | 'bloqueada' = nivel insuficiente
+  const [estadoRuleta, setEstadoRuleta] = useState<'cargando' | 'activando' | 'activa' | 'bloqueada'>('cargando');
 
-  const nivelNormalizado = nivelActivo.toLowerCase().trim();
-  const esNivelJ = /^j\d+$/.test(nivelNormalizado);
-  const bloqueadaPorNivel = !esNivelJ;
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -142,6 +142,19 @@ export default function RuletaFortuna() {
       if (data) {
         setNivelActivo(data.nivel_activo || 'pasantia');
         if (data.last_spin_at) setLastSpinAt(new Date(data.last_spin_at));
+
+        // Detectar nivel y activar/desbloquear automaticamente
+        const nivelNorm = (data.nivel_activo || 'pasantia').toLowerCase().trim();
+        const esJ = /^j\d+$/.test(nivelNorm);
+        if (esJ) {
+          // Nivel J detectado — iniciar activacion automatica
+          setEstadoRuleta('activando');
+          setTimeout(() => setEstadoRuleta('activa'), 1800);
+        } else {
+          setEstadoRuleta('bloqueada');
+        }
+      } else {
+        setEstadoRuleta('bloqueada');
       }
       setLoading(false);
     }
@@ -155,7 +168,8 @@ export default function RuletaFortuna() {
 
   const tiempoRestante = lastSpinAt ? COOLDOWN_MS - (now - lastSpinAt.getTime()) : 0;
   const enCooldown = tiempoRestante > 0;
-  const puedeGirar = !bloqueadaPorNivel && !enCooldown && !spinning && !loading;
+  const puedeGirar = estadoRuleta === 'activa' && !enCooldown && !spinning && !loading;
+  const bloqueadaPorNivel = estadoRuleta === 'bloqueada';
 
   const girar = useCallback(async () => {
     if (!puedeGirar) return;
@@ -481,8 +495,52 @@ export default function RuletaFortuna() {
 
             {/* Estado / botón */}
             <div className="mt-7 w-full flex flex-col items-center">
-              {loading ? (
-                <p className="text-sm" style={{ color: '#888888' }}>Cargando...</p>
+              {estadoRuleta === 'cargando' ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ background: 'rgba(255,193,7,0.08)', border: '1px solid rgba(255,193,7,0.25)' }}
+                  >
+                    <Loader2 size={26} style={{ color: '#FFC107' }} className="animate-spin" />
+                  </div>
+                  <p className="text-sm font-bold text-center" style={{ color: '#CCCCCC' }}>
+                    Verificando tu nivel...
+                  </p>
+                  <p className="text-xs text-center" style={{ color: '#888888' }}>
+                    Detectando nivel exigido para activar la ruleta
+                  </p>
+                </div>
+              ) : estadoRuleta === 'activando' ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{
+                      background: 'rgba(255,193,7,0.15)',
+                      border: '1px solid rgba(255,193,7,0.5)',
+                      boxShadow: '0 0 24px rgba(255,193,7,0.3)',
+                    }}
+                  >
+                    <Zap size={26} style={{ color: '#FFC107' }} className="animate-pulse" />
+                  </div>
+                  <p className="text-sm font-bold text-center" style={{ color: '#FFC107' }}>
+                    Nivel {nivelActivo.toUpperCase()} detectado
+                  </p>
+                  <p className="text-xs text-center" style={{ color: '#CCCCCC' }}>
+                    Activando ruleta automáticamente...
+                  </p>
+                  <div className="w-full max-w-[200px] mt-1">
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,193,7,0.1)' }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: '100%',
+                          background: 'linear-gradient(90deg, #FFD700, #FFC107)',
+                          animation: 'activatingBar 1.8s ease-in-out',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               ) : bloqueadaPorNivel ? (
                 <div className="flex flex-col items-center gap-3">
                   <div
@@ -520,23 +578,31 @@ export default function RuletaFortuna() {
                   </p>
                 </div>
               ) : (
-                <button
-                  onClick={girar}
-                  disabled={!puedeGirar}
-                  className="relative w-full max-w-xs py-4 rounded-2xl font-black text-base tracking-wide transition-all duration-300 active:scale-95"
-                  style={{
-                    background: spinning
-                      ? 'rgba(255,193,7,0.15)'
-                      : 'linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #B8860B 100%)',
-                    color: '#1A1A1A',
-                    border: '1px solid rgba(255,193,7,0.6)',
-                    boxShadow: '0 0 24px rgba(255,193,7,0.5), 0 0 48px rgba(255,193,7,0.2)',
-                    opacity: spinning ? 0.5 : 1,
-                    cursor: spinning ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {spinning ? 'Girando...' : '¡A Rodar!'}
-                </button>
+                <div className="flex flex-col items-center gap-3 w-full">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 size={16} style={{ color: '#22C55E' }} />
+                    <span className="text-xs font-bold" style={{ color: '#22C55E' }}>
+                      Ruleta activa · Nivel {nivelActivo.toUpperCase()}
+                    </span>
+                  </div>
+                  <button
+                    onClick={girar}
+                    disabled={!puedeGirar}
+                    className="relative w-full max-w-xs py-4 rounded-2xl font-black text-base tracking-wide transition-all duration-300 active:scale-95"
+                    style={{
+                      background: spinning
+                        ? 'rgba(255,193,7,0.15)'
+                        : 'linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #B8860B 100%)',
+                      color: '#1A1A1A',
+                      border: '1px solid rgba(255,193,7,0.6)',
+                      boxShadow: '0 0 24px rgba(255,193,7,0.5), 0 0 48px rgba(255,193,7,0.2)',
+                      opacity: spinning ? 0.5 : 1,
+                      cursor: spinning ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {spinning ? 'Girando...' : '¡A Rodar!'}
+                  </button>
+                </div>
               )}
 
               {errorMsg && (
@@ -638,6 +704,10 @@ export default function RuletaFortuna() {
           10%  { opacity: 1; }
           90%  { opacity: 0.6; }
           100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+        }
+        @keyframes activatingBar {
+          0%   { width: 0%; }
+          100% { width: 100%; }
         }
       `}</style>
     </div>
