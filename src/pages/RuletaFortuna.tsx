@@ -75,7 +75,9 @@ export default function RuletaFortuna() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const bloqueadaPorNivel = nivelActivo.toLowerCase() === 'pasantia';
+  const nivelNormalizado = nivelActivo.toLowerCase().trim();
+  const esNivelJ = /^j\d+$/.test(nivelNormalizado);
+  const bloqueadaPorNivel = !esNivelJ;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -490,7 +492,7 @@ export default function RuletaFortuna() {
                     <Lock size={26} style={{ color: '#FFC107' }} />
                   </div>
                   <p className="text-sm font-bold text-center" style={{ color: '#CCCCCC' }}>
-                    La ruleta está bloqueada para el nivel Pasantía.
+                    La ruleta está bloqueada para tu nivel actual.
                   </p>
                   <p className="text-xs text-center" style={{ color: '#888888' }}>
                     Activa un plan J (J1, J2, J3...) para participar.
