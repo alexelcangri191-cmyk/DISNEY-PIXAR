@@ -47,7 +47,6 @@ const SEGMENTOS = [
   { valor: 9000, label: '$9.000' },
 ];
 
-const PREMIOS_PERMITIDOS = [500, 1000, 2000];
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const SEGMENT_ANGLE = 360 / SEGMENTOS.length;
 
@@ -173,18 +172,24 @@ export default function RuletaFortuna() {
 
   const girar = useCallback(async () => {
     if (!puedeGirar) return;
-    setSpinning(true);
     setErrorMsg(null);
 
-    const premio = PREMIOS_PERMITIDOS[Math.floor(Math.random() * PREMIOS_PERMITIDOS.length)];
-    const indiceGanador = SEGMENTOS.findIndex((s) => s.valor === premio);
+    const indiceGanador = Math.floor(Math.random() * SEGMENTOS.length);
+    const premio = SEGMENTOS[indiceGanador].valor;
 
     const vueltas = 6 + Math.floor(Math.random() * 3);
     const centroSegmento = indiceGanador * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
-    const offset = (360 - centroSegmento) % 360;
+    const jitter = (Math.random() - 0.5) * (SEGMENT_ANGLE * 0.7);
+    const offset = (360 - centroSegmento + jitter) % 360;
     const rotacionFinal = rotation + vueltas * 360 + offset;
 
-    setRotation(rotacionFinal);
+    setSpinning(true);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setRotation(rotacionFinal);
+      });
+    });
 
     setTimeout(async () => {
       const { data: { user } } = await supabase.auth.getUser();
