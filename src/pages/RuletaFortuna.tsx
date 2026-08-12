@@ -213,8 +213,10 @@ export default function RuletaFortuna() {
       setPremioGanado(premio);
       setShowModal(true);
       setSpinning(false);
+
+      setTimeout(() => navigate('/perfil'), 5000);
     }, 4800);
-  }, [puedeGirar, rotation]);
+  }, [puedeGirar, rotation, navigate]);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden pb-20" style={{ background: '#000000' }}>
@@ -601,7 +603,7 @@ export default function RuletaFortuna() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setShowModal(false)}
+          onClick={() => navigate('/perfil')}
         >
           <div
             className="relative w-full max-w-sm rounded-3xl p-8 text-center"
@@ -614,7 +616,7 @@ export default function RuletaFortuna() {
           >
             {/* Botón cerrar X */}
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => navigate('/perfil')}
               className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90"
               style={{
                 background: 'rgba(255,193,7,0.1)',
@@ -663,12 +665,13 @@ export default function RuletaFortuna() {
             </p>
 
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => navigate('/perfil')}
               className="w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95"
               style={{
-                background: 'rgba(255,193,7,0.1)',
-                border: '1px solid rgba(255,193,7,0.4)',
-                color: '#FFC107',
+                background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #B8860B 100%)',
+                border: '1px solid rgba(255,193,7,0.6)',
+                color: '#1A1A1A',
+                boxShadow: '0 0 20px rgba(255,193,7,0.4)',
               }}
             >
               Continuar
