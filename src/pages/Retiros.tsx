@@ -44,6 +44,13 @@ export default function Retiros() {
   const puedeEnviar = montoValido && cuentaValida && !enviando;
 
   useEffect(() => {
+    if (!modalExito) return;
+
+    const redirectTimer = window.setTimeout(() => navigate('/perfil'), 2000);
+    return () => window.clearTimeout(redirectTimer);
+  }, [modalExito, navigate]);
+
+  useEffect(() => {
     async function fetchSaldo() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -132,18 +139,20 @@ export default function Retiros() {
       // 2. Descontar el monto de la billetera de ingresos
       const nuevoSaldo = saldoActual - (montoSeleccionado as number);
 
-      await supabase
+      const { error: saldoError } = await supabase
         .from('user_progress')
         .update({ saldo_ingresos: nuevoSaldo, updated_at: new Date().toISOString() })
         .eq('user_id', user.id);
 
-      setSaldoDisponible(nuevoSaldo);
+      if (saldoError) {
+        setErrorSaldo('No se pudo completar el retiro. Inténtalo de nuevo.');
+        setEnviando(false);
+        return;
+      }
 
-      // Mostrar modal de exito y redirigir al perfil
+      setSaldoDisponible(nuevoSaldo);
       setModalExito(true);
       setEnviando(false);
-
-      setTimeout(() => navigate('/perfil'), 2000);
     } catch {
       setEnviando(false);
     }
