@@ -199,39 +199,15 @@ export default function RuletaFortuna() {
         return;
       }
 
-      const { error: progressError } = await supabase
-        .from('user_progress')
-        .update({ last_spin_at: new Date().toISOString() })
-        .eq('user_id', user.id);
+      const { error: spinError } = await supabase.rpc('spin_roulette', {
+        prize_amount: premio,
+      });
 
-      if (progressError) {
-        setErrorMsg('No se pudo registrar tu tiro. Inténtalo de nuevo.');
+      if (spinError) {
+        setErrorMsg('No se pudo registrar tu premio. Inténtalo de nuevo.');
         setSpinning(false);
         return;
       }
-
-      const { data: progreso } = await supabase
-        .from('user_progress')
-        .select('saldo_ingresos')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const saldoActual = progreso ? Number(progreso.saldo_ingresos) || 0 : 0;
-      const nuevoSaldo = saldoActual + premio;
-
-      await supabase
-        .from('user_progress')
-        .update({ saldo_ingresos: nuevoSaldo })
-        .eq('user_id', user.id);
-
-      await supabase
-        .from('transacciones')
-        .insert({
-          user_id: user.id,
-          tipo: 'Premio Ruleta',
-          monto: premio,
-          descripcion: `Premio de la Ruleta de la Fortuna: $${premio.toLocaleString('es-CO')} COP`,
-        });
 
       setLastSpinAt(new Date());
       setPremioGanado(premio);
