@@ -64,8 +64,6 @@ export default function RuletaFortuna() {
   const [particles] = useState(() => generateParticles(60));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [lastSpinAt, setLastSpinAt] = useState<Date | null>(null);
   const [nivelActivo, setNivelActivo] = useState<string>('pasantia');
@@ -151,7 +149,7 @@ export default function RuletaFortuna() {
         if (esJ) {
           // Nivel J detectado — iniciar activacion automatica
           setEstadoRuleta('activando');
-          activationTimerRef.current = setTimeout(() => setEstadoRuleta('activa'), 1800);
+          setTimeout(() => setEstadoRuleta('activa'), 1800);
         } else {
           setEstadoRuleta('bloqueada');
         }
@@ -172,15 +170,6 @@ export default function RuletaFortuna() {
     return () => {
       if (redirectTimerRef.current) {
         clearTimeout(redirectTimerRef.current);
-        redirectTimerRef.current = null;
-      }
-      if (activationTimerRef.current) {
-        clearTimeout(activationTimerRef.current);
-        activationTimerRef.current = null;
-      }
-      if (spinTimerRef.current) {
-        clearTimeout(spinTimerRef.current);
-        spinTimerRef.current = null;
       }
     };
   }, []);
@@ -220,7 +209,7 @@ export default function RuletaFortuna() {
       });
     });
 
-    spinTimerRef.current = setTimeout(async () => {
+    setTimeout(async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -241,12 +230,11 @@ export default function RuletaFortuna() {
         setPremioGanado(premio);
         setShowModal(true);
 
-        redirectTimerRef.current = setTimeout(() => navigate('/perfil'), 5000);
+        redirectTimerRef.current = setTimeout(() => navigate('/perfil'), 2500);
       } catch {
         setErrorMsg('Ocurrió un error inesperado al registrar tu premio. Inténtalo de nuevo.');
       } finally {
         setSpinning(false);
-        spinTimerRef.current = null;
       }
     }, 4800);
   }, [puedeGirar, rotation, navigate]);

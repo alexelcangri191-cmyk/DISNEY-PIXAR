@@ -18,17 +18,14 @@ import Soporte from './pages/Soporte';
 import Niveles from './pages/Niveles';
 import RuletaFortuna from './pages/RuletaFortuna';
 import ProtectedRoute from './components/ProtectedRoute';
-import PublicRoute from './components/PublicRoute';
-import ScrollToTop from './components/ScrollToTop';
 
 export default function App() {
   return (
     <Router>
-      <ScrollToTop />
       <Routes>
-        <Route path="/" element={<PublicRoute><Welcome /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/" element={<Welcome />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         <Route path="/recargar" element={<ProtectedRoute><Recargar /></ProtectedRoute>} />
         <Route path="/recargas/qr" element={<ProtectedRoute><PaginaQR /></ProtectedRoute>} />
