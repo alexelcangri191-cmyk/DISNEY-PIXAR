@@ -63,6 +63,7 @@ export default function RuletaFortuna() {
   const navigate = useNavigate();
   const [particles] = useState(() => generateParticles(60));
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [lastSpinAt, setLastSpinAt] = useState<Date | null>(null);
   const [nivelActivo, setNivelActivo] = useState<string>('pasantia');
@@ -165,10 +166,27 @@ export default function RuletaFortuna() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
+
   const tiempoRestante = lastSpinAt ? COOLDOWN_MS - (now - lastSpinAt.getTime()) : 0;
   const enCooldown = tiempoRestante > 0;
   const puedeGirar = estadoRuleta === 'activa' && !enCooldown && !spinning && !loading;
   const bloqueadaPorNivel = estadoRuleta === 'bloqueada';
+
+  const handleCerrarModal = useCallback(() => {
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+    setShowModal(false);
+    navigate('/perfil');
+  }, [navigate]);
 
   const girar = useCallback(async () => {
     if (!puedeGirar) return;
@@ -192,29 +210,32 @@ export default function RuletaFortuna() {
     });
 
     setTimeout(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setErrorMsg('No se pudo verificar tu sesión.');
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setErrorMsg('No se pudo verificar tu sesión.');
+          return;
+        }
+
+        const { error: spinError } = await supabase.rpc('spin_roulette', {
+          prize_amount: premio,
+        });
+
+        if (spinError) {
+          setErrorMsg('No se pudo registrar tu premio. Inténtalo de nuevo.');
+          return;
+        }
+
+        setLastSpinAt(new Date());
+        setPremioGanado(premio);
+        setShowModal(true);
+
+        redirectTimerRef.current = setTimeout(() => navigate('/perfil'), 2500);
+      } catch {
+        setErrorMsg('Ocurrió un error inesperado al registrar tu premio. Inténtalo de nuevo.');
+      } finally {
         setSpinning(false);
-        return;
       }
-
-      const { error: spinError } = await supabase.rpc('spin_roulette', {
-        prize_amount: premio,
-      });
-
-      if (spinError) {
-        setErrorMsg('No se pudo registrar tu premio. Inténtalo de nuevo.');
-        setSpinning(false);
-        return;
-      }
-
-      setLastSpinAt(new Date());
-      setPremioGanado(premio);
-      setShowModal(true);
-      setSpinning(false);
-
-      setTimeout(() => navigate('/perfil'), 5000);
     }, 4800);
   }, [puedeGirar, rotation, navigate]);
 
@@ -603,7 +624,7 @@ export default function RuletaFortuna() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
-          onClick={() => navigate('/perfil')}
+          onClick={handleCerrarModal}
         >
           <div
             className="relative w-full max-w-sm rounded-3xl p-8 text-center"
@@ -616,7 +637,7 @@ export default function RuletaFortuna() {
           >
             {/* Botón cerrar X */}
             <button
-              onClick={() => navigate('/perfil')}
+              onClick={handleCerrarModal}
               className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90"
               style={{
                 background: 'rgba(255,193,7,0.1)',
@@ -665,7 +686,7 @@ export default function RuletaFortuna() {
             </p>
 
             <button
-              onClick={() => navigate('/perfil')}
+              onClick={handleCerrarModal}
               className="w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95"
               style={{
                 background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #B8860B 100%)',
