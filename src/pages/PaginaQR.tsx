@@ -13,6 +13,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 interface RecargaState {
   monto: number;
@@ -95,33 +96,7 @@ export default function PaginaQR() {
       className="relative min-h-screen overflow-x-hidden"
       style={{ background: '#000000' }}
     >
-      {/* Ambient glow - same as Perfil */}
-      <div
-        className="fixed pointer-events-none z-0"
-        style={{
-          width: '600px',
-          height: '600px',
-          borderRadius: '50%',
-          background:
-            'radial-gradient(circle, rgba(255,193,7,0.06) 0%, transparent 70%)',
-          top: '-200px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }}
-      />
-      <div
-        className="fixed pointer-events-none z-0"
-        style={{
-          width: '400px',
-          height: '400px',
-          borderRadius: '50%',
-          background:
-            'radial-gradient(circle, rgba(255,193,7,0.04) 0%, transparent 70%)',
-          bottom: '100px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }}
-      />
+      <AnimatedBackground />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col min-h-screen px-4 py-6">

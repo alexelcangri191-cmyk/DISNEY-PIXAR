@@ -16,6 +16,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
+import AnimatedBackground from '../components/AnimatedBackground';
 import { supabase } from '../lib/supabase';
 
 interface InstructionItem {
@@ -139,22 +140,7 @@ export default function InformacionPersonal() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden pb-20" style={{ background: '#000000' }}>
-      <div
-        className="fixed pointer-events-none z-0"
-        style={{
-          width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,193,7,0.06) 0%, transparent 70%)',
-          top: '-200px', left: '50%', transform: 'translateX(-50%)',
-        }}
-      />
-      <div
-        className="fixed pointer-events-none z-0"
-        style={{
-          width: '400px', height: '400px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,193,7,0.04) 0%, transparent 70%)',
-          bottom: '100px', left: '50%', transform: 'translateX(-50%)',
-        }}
-      />
+      <AnimatedBackground />
 
       <div className="relative z-10 flex flex-col min-h-screen px-4 py-8">
         <div className="flex items-center gap-3 mb-6">
