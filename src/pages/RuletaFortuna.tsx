@@ -51,8 +51,9 @@ const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const SEGMENT_ANGLE = 360 / SEGMENTOS.length;
 
 function formatCountdown(ms: number): string {
-  if (ms <= 0) return '00:00:00';
-  const totalSec = Math.floor(ms / 1000);
+  const safeMs = Math.max(0, Math.floor(ms));
+  if (safeMs <= 0) return '00:00:00';
+  const totalSec = Math.floor(safeMs / 1000);
   const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
   const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
   const s = String(totalSec % 60).padStart(2, '0');
@@ -64,6 +65,8 @@ export default function RuletaFortuna() {
   const [particles] = useState(() => generateParticles(60));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [lastSpinAt, setLastSpinAt] = useState<Date | null>(null);
   const [nivelActivo, setNivelActivo] = useState<string>('pasantia');
@@ -74,10 +77,7 @@ export default function RuletaFortuna() {
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  // 'cargando' = verificando nivel | 'activando' = nivel J detectado, activando | 'activa' = desbloqueada | 'bloqueada' = nivel insuficiente
   const [estadoRuleta, setEstadoRuleta] = useState<'cargando' | 'activando' | 'activa' | 'bloqueada'>('cargando');
-
-
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -127,36 +127,49 @@ export default function RuletaFortuna() {
 
   useEffect(() => {
     async function fetchEstado() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-      const { data, error } = await supabase
-        .from('user_progress')
-        .select('last_spin_at, nivel_activo')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        const { data, error } = await supabase
+          .from('user_progress')
+          .select('last_spin_at, nivel_activo')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      if (error) {
-        setErrorMsg('No se pudo cargar el estado de la ruleta.');
-      }
-      if (data) {
-        setNivelActivo(data.nivel_activo || 'pasantia');
-        if (data.last_spin_at) setLastSpinAt(new Date(data.last_spin_at));
+        if (error) {
+          setErrorMsg('No se pudo cargar el estado de la ruleta.');
+        }
+        if (data) {
+          const nivel = data.nivel_activo || 'pasantia';
+          setNivelActivo(nivel);
+          if (data.last_spin_at) {
+            const fechaGiro = new Date(data.last_spin_at);
+            if (!isNaN(fechaGiro.getTime())) {
+              setLastSpinAt(fechaGiro);
+            }
+          }
 
-        // Detectar nivel y activar/desbloquear automaticamente
-        const nivelNorm = (data.nivel_activo || 'pasantia').toLowerCase().trim();
-        const esJ = /^j\d+$/.test(nivelNorm);
-        if (esJ) {
-          // Nivel J detectado — iniciar activacion automatica
-          setEstadoRuleta('activando');
-          setTimeout(() => setEstadoRuleta('activa'), 1800);
+          const nivelNorm = nivel.toLowerCase().trim();
+          const esJ = /^j\d+$/.test(nivelNorm);
+          if (esJ) {
+            setEstadoRuleta('activando');
+            activationTimerRef.current = setTimeout(() => setEstadoRuleta('activa'), 1800);
+          } else {
+            setEstadoRuleta('bloqueada');
+          }
         } else {
           setEstadoRuleta('bloqueada');
         }
-      } else {
+      } catch {
+        setErrorMsg('Error de conexión al cargar la ruleta.');
         setEstadoRuleta('bloqueada');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchEstado();
   }, []);
@@ -170,11 +183,21 @@ export default function RuletaFortuna() {
     return () => {
       if (redirectTimerRef.current) {
         clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
+      if (activationTimerRef.current) {
+        clearTimeout(activationTimerRef.current);
+        activationTimerRef.current = null;
+      }
+      if (spinTimerRef.current) {
+        clearTimeout(spinTimerRef.current);
+        spinTimerRef.current = null;
       }
     };
   }, []);
 
-  const tiempoRestante = lastSpinAt ? COOLDOWN_MS - (now - lastSpinAt.getTime()) : 0;
+  const lastSpinTs = lastSpinAt && !isNaN(lastSpinAt.getTime()) ? lastSpinAt.getTime() : 0;
+  const tiempoRestante = lastSpinTs > 0 ? Math.max(0, COOLDOWN_MS - (now - lastSpinTs)) : 0;
   const enCooldown = tiempoRestante > 0;
   const puedeGirar = estadoRuleta === 'activa' && !enCooldown && !spinning && !loading;
   const bloqueadaPorNivel = estadoRuleta === 'bloqueada';
@@ -185,6 +208,7 @@ export default function RuletaFortuna() {
       redirectTimerRef.current = null;
     }
     setShowModal(false);
+    setPremioGanado(null);
     navigate('/perfil');
   }, [navigate]);
 
@@ -193,7 +217,7 @@ export default function RuletaFortuna() {
     setErrorMsg(null);
 
     const indiceGanador = Math.floor(Math.random() * SEGMENTOS.length);
-    const premio = SEGMENTOS[indiceGanador].valor;
+    const premio = SEGMENTOS[indiceGanador]?.valor ?? 500;
 
     const vueltas = 6 + Math.floor(Math.random() * 3);
     const centroSegmento = indiceGanador * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
@@ -209,7 +233,7 @@ export default function RuletaFortuna() {
       });
     });
 
-    setTimeout(async () => {
+    spinTimerRef.current = setTimeout(async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -230,14 +254,73 @@ export default function RuletaFortuna() {
         setPremioGanado(premio);
         setShowModal(true);
 
-        redirectTimerRef.current = setTimeout(() => navigate('/perfil'), 2500);
+        redirectTimerRef.current = setTimeout(() => navigate('/perfil'), 5000);
       } catch {
         setErrorMsg('Ocurrió un error inesperado al registrar tu premio. Inténtalo de nuevo.');
       } finally {
         setSpinning(false);
+        spinTimerRef.current = null;
       }
     }, 4800);
   }, [puedeGirar, rotation, navigate]);
+
+  if (loading) {
+    return (
+      <div className="relative min-h-screen overflow-x-hidden pb-20" style={{ background: '#000000' }}>
+        <div
+          className="fixed pointer-events-none z-0"
+          style={{
+            width: '600px',
+            height: '600px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,193,7,0.06) 0%, transparent 70%)',
+            top: '-200px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        />
+        <div
+          className="fixed pointer-events-none z-0"
+          style={{
+            width: '400px',
+            height: '400px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,193,7,0.04) 0%, transparent 70%)',
+            bottom: '100px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        />
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+            style={{
+              background: 'rgba(255,193,7,0.1)',
+              border: '1px solid rgba(255,193,7,0.3)',
+              boxShadow: '0 0 24px rgba(255,193,7,0.2)',
+            }}
+          >
+            <Loader2 size={28} style={{ color: '#FFC107' }} className="animate-spin" />
+          </div>
+          <h2
+            className="font-black text-lg mb-2"
+            style={{
+              background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 40%, #B8860B 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            Cargando Ruleta
+          </h2>
+          <p className="text-sm text-center" style={{ color: '#888888' }}>
+            Verificando tu nivel y el estado del último giro...
+          </p>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-x-hidden pb-20" style={{ background: '#000000' }}>
@@ -527,7 +610,7 @@ export default function RuletaFortuna() {
                     <Zap size={26} style={{ color: '#FFC107' }} className="animate-pulse" />
                   </div>
                   <p className="text-sm font-bold text-center" style={{ color: '#FFC107' }}>
-                    Nivel {nivelActivo.toUpperCase()} detectado
+                    Nivel {(nivelActivo || 'pasantia').toUpperCase()} detectado
                   </p>
                   <p className="text-xs text-center" style={{ color: '#CCCCCC' }}>
                     Activando ruleta automáticamente...
@@ -586,7 +669,7 @@ export default function RuletaFortuna() {
                   <div className="flex items-center gap-2 mb-1">
                     <CheckCircle2 size={16} style={{ color: '#22C55E' }} />
                     <span className="text-xs font-bold" style={{ color: '#22C55E' }}>
-                      Ruleta activa · Nivel {nivelActivo.toUpperCase()}
+                      Ruleta activa · Nivel {(nivelActivo || 'pasantia').toUpperCase()}
                     </span>
                   </div>
                   <button
