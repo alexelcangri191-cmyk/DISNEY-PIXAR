@@ -174,7 +174,8 @@ export default function RuletaFortuna() {
     };
   }, []);
 
-  const tiempoRestante = lastSpinAt ? COOLDOWN_MS - (now - lastSpinAt.getTime()) : 0;
+  const lastSpinTs = lastSpinAt && !isNaN(lastSpinAt.getTime()) ? lastSpinAt.getTime() : 0;
+  const tiempoRestante = lastSpinTs > 0 ? Math.max(0, COOLDOWN_MS - (now - lastSpinTs)) : 0;
   const enCooldown = tiempoRestante > 0;
   const puedeGirar = estadoRuleta === 'activa' && !enCooldown && !spinning && !loading;
   const bloqueadaPorNivel = estadoRuleta === 'bloqueada';
@@ -185,8 +186,8 @@ export default function RuletaFortuna() {
       redirectTimerRef.current = null;
     }
     setShowModal(false);
-    navigate('/perfil');
-  }, [navigate]);
+    setPremioGanado(null);
+  }, []);
 
   const girar = useCallback(async () => {
     if (!puedeGirar) return;
@@ -229,15 +230,13 @@ export default function RuletaFortuna() {
         setLastSpinAt(new Date());
         setPremioGanado(premio);
         setShowModal(true);
-
-        redirectTimerRef.current = setTimeout(() => navigate('/perfil'), 2500);
       } catch {
         setErrorMsg('Ocurrió un error inesperado al registrar tu premio. Inténtalo de nuevo.');
       } finally {
         setSpinning(false);
       }
     }, 4800);
-  }, [puedeGirar, rotation, navigate]);
+  }, [puedeGirar, rotation]);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden pb-20" style={{ background: '#000000' }}>
@@ -561,25 +560,33 @@ export default function RuletaFortuna() {
                   </p>
                 </div>
               ) : enCooldown ? (
-                <div className="flex flex-col items-center gap-3">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ background: 'rgba(255,193,7,0.08)', border: '1px solid rgba(255,193,7,0.25)' }}
-                  >
-                    <Clock size={26} style={{ color: '#FFC107' }} />
+                <div className="flex flex-col items-center gap-3 w-full">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock size={16} style={{ color: '#FFC107' }} />
+                    <span className="text-xs font-bold" style={{ color: '#FFC107' }}>
+                      Próximo giro disponible en
+                    </span>
                   </div>
-                  <p className="text-sm font-bold text-center" style={{ color: '#CCCCCC' }}>
-                    Ya giraste la ruleta hoy.
-                  </p>
-                  <p className="text-xs" style={{ color: '#888888' }}>
-                    Disponible en
-                  </p>
                   <p
-                    className="text-lg font-black tabular-nums"
+                    className="text-2xl font-black tabular-nums mb-2"
                     style={{ color: '#FFC107', textShadow: '0 0 10px rgba(255,193,7,0.4)' }}
                   >
                     {formatCountdown(tiempoRestante)}
                   </p>
+                  <button
+                    disabled
+                    className="relative w-full max-w-xs py-4 rounded-2xl font-black text-base tracking-wide transition-all duration-300"
+                    style={{
+                      background: 'rgba(255,193,7,0.08)',
+                      color: '#555555',
+                      border: '1px solid rgba(255,193,7,0.15)',
+                      cursor: 'not-allowed',
+                      opacity: 0.5,
+                    }}
+                  >
+                    <Lock size={16} className="inline mr-2" />
+                    ¡A Rodar!
+                  </button>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 w-full">
