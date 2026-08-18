@@ -64,7 +64,6 @@ export default function RuletaFortuna() {
   const navigate = useNavigate();
   const [particles] = useState(() => generateParticles(60));
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -181,10 +180,6 @@ export default function RuletaFortuna() {
 
   useEffect(() => {
     return () => {
-      if (redirectTimerRef.current) {
-        clearTimeout(redirectTimerRef.current);
-        redirectTimerRef.current = null;
-      }
       if (activationTimerRef.current) {
         clearTimeout(activationTimerRef.current);
         activationTimerRef.current = null;
@@ -203,14 +198,9 @@ export default function RuletaFortuna() {
   const bloqueadaPorNivel = estadoRuleta === 'bloqueada';
 
   const handleCerrarModal = useCallback(() => {
-    if (redirectTimerRef.current) {
-      clearTimeout(redirectTimerRef.current);
-      redirectTimerRef.current = null;
-    }
     setShowModal(false);
     setPremioGanado(null);
-    navigate('/perfil');
-  }, [navigate]);
+  }, []);
 
   const girar = useCallback(async () => {
     if (!puedeGirar) return;
@@ -250,11 +240,11 @@ export default function RuletaFortuna() {
           return;
         }
 
-        setLastSpinAt(new Date());
+        const ahora = new Date();
+        setLastSpinAt(ahora);
+        setNow(ahora.getTime());
         setPremioGanado(premio);
         setShowModal(true);
-
-        redirectTimerRef.current = setTimeout(() => navigate('/perfil'), 5000);
       } catch {
         setErrorMsg('Ocurrió un error inesperado al registrar tu premio. Inténtalo de nuevo.');
       } finally {
@@ -262,7 +252,7 @@ export default function RuletaFortuna() {
         spinTimerRef.current = null;
       }
     }, 4800);
-  }, [puedeGirar, rotation, navigate]);
+  }, [puedeGirar, rotation]);
 
   if (loading) {
     return (
