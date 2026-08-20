@@ -1,12 +1,222 @@
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CircleDollarSign, Sparkles } from 'lucide-react';
+import { ArrowLeft, CircleDollarSign, Sparkles, Table2 } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
+
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  opacity: number;
+  delay: number;
+}
+
+function generateParticles(count: number): Particle[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 3 + 1,
+    speed: Math.random() * 20 + 15,
+    opacity: Math.random() * 0.6 + 0.2,
+    delay: Math.random() * 10,
+  }));
+}
+
+interface FilaRegla {
+  jerarquia: string;
+  deposito: string;
+  tareas: string;
+  porTarea: string;
+  diario: string;
+  treintaDias: string;
+  trescientosSesentaDias: string;
+  esGratis?: boolean;
+}
+
+const FILAS: FilaRegla[] = [
+  {
+    jerarquia: 'Intern',
+    deposito: '0',
+    tareas: '5',
+    porTarea: '1.000',
+    diario: '5.000',
+    treintaDias: '0',
+    trescientosSesentaDias: '0',
+    esGratis: true,
+  },
+  {
+    jerarquia: 'J1',
+    deposito: '150.000',
+    tareas: '5',
+    porTarea: '1.200',
+    diario: '6.000',
+    treintaDias: '180.000',
+    trescientosSesentaDias: '2.160.000',
+  },
+  {
+    jerarquia: 'J2',
+    deposito: '480.000',
+    tareas: '10',
+    porTarea: '1.600',
+    diario: '16.000',
+    treintaDias: '480.000',
+    trescientosSesentaDias: '5.760.000',
+  },
+  {
+    jerarquia: 'J3',
+    deposito: '1.300.000',
+    tareas: '15',
+    porTarea: '2.800',
+    diario: '42.000',
+    treintaDias: '1.260.000',
+    trescientosSesentaDias: '15.120.000',
+  },
+  {
+    jerarquia: 'J4',
+    deposito: '4.700.000',
+    tareas: '30',
+    porTarea: '5.600',
+    diario: '168.000',
+    treintaDias: '5.040.000',
+    trescientosSesentaDias: '60.480.000',
+  },
+  {
+    jerarquia: 'J5',
+    deposito: '12.800.000',
+    tareas: '50',
+    porTarea: '9.200',
+    diario: '460.000',
+    treintaDias: '13.800.000',
+    trescientosSesentaDias: '165.600.000',
+  },
+  {
+    jerarquia: 'J6',
+    deposito: '31.000.000',
+    tareas: '80',
+    porTarea: '14.000',
+    diario: '1.120.000',
+    treintaDias: '33.600.000',
+    trescientosSesentaDias: '403.200.000',
+  },
+  {
+    jerarquia: 'J7',
+    deposito: '67.200.000',
+    tareas: '150',
+    porTarea: '16.000',
+    diario: '2.400.000',
+    treintaDias: '72.000.000',
+    trescientosSesentaDias: '864.000.000',
+  },
+  {
+    jerarquia: 'J8',
+    deposito: '135.000.000',
+    tareas: '250',
+    porTarea: '20.000',
+    diario: '5.000.000',
+    treintaDias: '150.000.000',
+    trescientosSesentaDias: '1.800.000.000',
+  },
+  {
+    jerarquia: 'J9',
+    deposito: '325.000.000',
+    tareas: '500',
+    porTarea: '25.000',
+    diario: '12.500.000',
+    treintaDias: '375.000.000',
+    trescientosSesentaDias: '4.500.000.000',
+  },
+];
+
+const COLUMNAS = [
+  { key: 'jerarquia', label: 'Jerarquía' },
+  { key: 'deposito', label: 'Depósito' },
+  { key: 'tareas', label: 'Tareas' },
+  { key: 'porTarea', label: 'Por tarea' },
+  { key: 'diario', label: 'Diario' },
+  { key: 'treintaDias', label: '30 días' },
+  { key: 'trescientosSesentaDias', label: '360 días' },
+];
 
 export default function FormasDeGanar() {
   const navigate = useNavigate();
+  const [particles] = useState(() => generateParticles(60));
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    const stars: { x: number; y: number; r: number; alpha: number; speed: number }[] = [];
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < 120; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.5 + 0.3,
+        alpha: Math.random(),
+        speed: Math.random() * 0.005 + 0.002,
+      });
+    }
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach((s) => {
+        s.alpha += s.speed;
+        if (s.alpha > 1 || s.alpha < 0) s.speed *= -1;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 193, 7, ${s.alpha * 0.7})`;
+        ctx.fill();
+      });
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden pb-20" style={{ background: '#000000' }}>
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{ opacity: 0.8 }}
+      />
+
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {particles.map((p) => (
+          <div
+            key={p.id}
+            className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              background: '#FFC107',
+              opacity: p.opacity,
+              animation: `floatUp ${p.speed}s ${p.delay}s linear infinite`,
+            }}
+          />
+        ))}
+      </div>
+
       <div
         className="fixed pointer-events-none z-0"
         style={{
@@ -24,62 +234,276 @@ export default function FormasDeGanar() {
         }}
       />
 
-      <div className="relative z-10 flex flex-col min-h-screen px-4 py-8">
-        <button
-          onClick={() => navigate('/perfil')}
-          className="flex items-center gap-2 mb-8 transition-opacity hover:opacity-70 active:scale-95"
-          style={{ color: '#FFC107' }}
-        >
-          <ArrowLeft size={20} />
-          <span className="text-sm font-bold">Regresar al Perfil</span>
-        </button>
+      <div className="relative z-10 flex flex-col min-h-screen px-4 py-8 pb-24">
+        <div className="w-full max-w-lg flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate('/perfil')}
+            className="flex items-center gap-2 transition-opacity hover:opacity-70 active:scale-95"
+            style={{ color: '#FFC107' }}
+          >
+            <ArrowLeft size={20} />
+            <span className="text-sm font-bold">Regresar al Perfil</span>
+          </button>
+        </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="w-full max-w-sm">
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <Sparkles size={14} style={{ color: '#FFC107' }} />
-              <span className="text-xs font-extrabold tracking-[0.2em] uppercase" style={{ color: '#FFC107' }}>
-                Próximamente
-              </span>
-              <Sparkles size={14} style={{ color: '#FFC107' }} />
-            </div>
+        <div className="w-full max-w-lg mx-auto flex flex-col items-center text-center mb-8">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Sparkles size={14} style={{ color: '#FFC107' }} />
+            <span className="text-xs font-extrabold tracking-[0.25em] uppercase" style={{ color: '#FFC107' }}>
+              Formas de Ganar
+            </span>
+            <Sparkles size={14} style={{ color: '#FFC107' }} />
+          </div>
 
+          <h1
+            className="font-black leading-tight mb-3"
+            style={{
+              fontSize: 'clamp(1.6rem, 7vw, 2.2rem)',
+              background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 40%, #B8860B 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              filter: 'drop-shadow(0 0 16px rgba(255,193,7,0.35))',
+            }}
+          >
+            Formas de Ganar Dinero
+          </h1>
+
+          <div
+            className="w-20 h-px"
+            style={{ background: 'linear-gradient(90deg, transparent, #FFC107, transparent)' }}
+          />
+        </div>
+
+        {/* Encabezado del módulo */}
+        <div className="w-full max-w-lg mx-auto mb-5">
+          <div
+            className="rounded-2xl p-4 flex items-center gap-3"
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(255,193,7,0.3)',
+              boxShadow: '0 0 30px rgba(255,193,7,0.1)',
+            }}
+          >
             <div
-              className="rounded-3xl p-8 text-center"
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{
-                background: '#1A1A1A',
+                background: 'rgba(255,193,7,0.12)',
                 border: '1px solid rgba(255,193,7,0.3)',
-                boxShadow: '0 0 40px rgba(255,193,7,0.1)',
               }}
             >
-              <div
-                className="mx-auto mb-5 w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: 'rgba(255,193,7,0.1)' }}
-              >
-                <CircleDollarSign size={30} style={{ color: '#FFC107' }} />
-              </div>
-
-              <h2
-                className="font-black text-xl mb-3"
-                style={{
-                  background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 40%, #B8860B 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                Formas de Ganar Dinero
-              </h2>
-
-              <p className="text-sm leading-relaxed" style={{ color: '#888888', lineHeight: '1.75' }}>
-                Esta sección se encuentra actualmente en desarrollo. Muy pronto estará disponible.
-              </p>
+              <Table2 size={20} style={{ color: '#FFC107' }} />
             </div>
+            <h2
+              className="text-sm font-black tracking-wide text-center flex-1"
+              style={{
+                background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 40%, #B8860B 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              Tabla de reglas de ingresos por inversiones
+            </h2>
+          </div>
+        </div>
+
+        {/* Tabla */}
+        <div className="w-full max-w-lg mx-auto">
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(255,193,7,0.25)',
+              boxShadow: '0 0 40px rgba(255,193,7,0.1), inset 0 1px 0 rgba(255,255,255,0.03)',
+            }}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full" style={{ borderCollapse: 'collapse', minWidth: '680px' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,193,7,0.06)' }}>
+                    {COLUMNAS.map((col, i) => (
+                      <th
+                        key={col.key}
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                          color: '#FFC107',
+                          borderBottom: '1px solid rgba(255,193,7,0.25)',
+                          borderRight:
+                            i < COLUMNAS.length - 1
+                              ? '1px solid rgba(255,193,7,0.1)'
+                              : 'none',
+                        }}
+                      >
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {FILAS.map((fila, idx) => (
+                    <tr
+                      key={fila.jerarquia}
+                      className="transition-colors duration-200"
+                      style={{
+                        background:
+                          idx % 2 === 0
+                            ? 'transparent'
+                            : 'rgba(255,193,7,0.025)',
+                        borderBottom:
+                          idx < FILAS.length - 1
+                            ? '1px solid rgba(255,193,7,0.08)'
+                            : 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background =
+                          'rgba(255,193,7,0.07)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background =
+                          idx % 2 === 0 ? 'transparent' : 'rgba(255,193,7,0.025)';
+                      }}
+                    >
+                      {/* Jerarquía */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        <span
+                          className="inline-block px-2.5 py-1 rounded-lg font-black text-xs"
+                          style={
+                            fila.esGratis
+                              ? {
+                                  background: 'rgba(34,197,94,0.12)',
+                                  border: '1px solid rgba(34,197,94,0.4)',
+                                  color: '#22C55E',
+                                }
+                              : {
+                                  background: 'rgba(255,193,7,0.12)',
+                                  border: '1px solid rgba(255,193,7,0.4)',
+                                  color: '#FFC107',
+                                }
+                          }
+                        >
+                          {fila.jerarquia}
+                        </span>
+                      </td>
+                      {/* Depósito */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: fila.esGratis ? '#22C55E' : '#FFFFFF',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        {fila.esGratis ? 'GRATIS' : `$${fila.deposito}`}
+                      </td>
+                      {/* Tareas */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#CCCCCC',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        {fila.tareas}
+                      </td>
+                      {/* Por tarea */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#CCCCCC',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        ${fila.porTarea}
+                      </td>
+                      {/* Diario */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#FFC107',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        ${fila.diario}
+                      </td>
+                      {/* 30 días */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#FFD700',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        ${fila.treintaDias}
+                      </td>
+                      {/* 360 días */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#FFD700',
+                          fontWeight: 900,
+                          fontSize: '0.8rem',
+                          textShadow: '0 0 6px rgba(255,193,7,0.3)',
+                        }}
+                      >
+                        ${fila.trescientosSesentaDias}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Nota inferior */}
+          <div
+            className="mt-4 rounded-2xl p-4 flex items-start gap-3"
+            style={{
+              background: 'rgba(255,193,7,0.05)',
+              border: '1px solid rgba(255,193,7,0.25)',
+              boxShadow: '0 0 20px rgba(255,193,7,0.06)',
+            }}
+          >
+            <CircleDollarSign size={18} style={{ color: '#FFC107', flexShrink: 0, marginTop: 2 }} />
+            <p className="text-xs leading-relaxed" style={{ color: '#AAAAAA' }}>
+              <span className="font-black" style={{ color: '#FFC107' }}>Nota: </span>
+              Los valores mostrados corresponden a las ganancias proyectadas según cada nivel de inversión.
+              El nivel <span className="font-bold" style={{ color: '#22C55E' }}>Intern</span> es gratuito
+              y no genera ingresos de 30 ni 360 días. Desliza horizontalmente para ver toda la tabla en
+              pantallas pequeñas.
+            </p>
           </div>
         </div>
       </div>
 
       <BottomNav />
+
+      <style>{`
+        @keyframes floatUp {
+          0%   { transform: translateY(0px) scale(1); opacity: 0; }
+          10%  { opacity: 1; }
+          90%  { opacity: 0.6; }
+          100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
