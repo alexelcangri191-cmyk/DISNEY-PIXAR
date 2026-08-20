@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CircleDollarSign, Sparkles, Table2, Users, Gift } from 'lucide-react';
+import { ArrowLeft, CircleDollarSign, Sparkles, Table2, Users, Gift, ClipboardList } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 
 interface Particle {
@@ -166,6 +166,34 @@ const COLUMNAS_COMISION = [
   { key: 'primerNivel', label: '1er nivel' },
   { key: 'segundoNivel', label: '2do nivel' },
   { key: 'tercerNivel', label: '3er nivel' },
+];
+
+interface FilaRecompensa {
+  plan: string;
+  comision: string;
+  nivelA: string;
+  nivelB: string;
+  nivelC: string;
+}
+
+const FILAS_RECOMPENSA: FilaRecompensa[] = [
+  { plan: 'J1', comision: '4%-2%-1%', nivelA: '$240', nivelB: '$120', nivelC: '$60' },
+  { plan: 'J2', comision: '4%-2%-1%', nivelA: '$640', nivelB: '$320', nivelC: '$160' },
+  { plan: 'J3', comision: '4%-2%-1%', nivelA: '$1.680', nivelB: '$840', nivelC: '$420' },
+  { plan: 'J4', comision: '4%-2%-1%', nivelA: '$6.720', nivelB: '$3.360', nivelC: '$1.680' },
+  { plan: 'J5', comision: '4%-2%-1%', nivelA: '$18.400', nivelB: '$9.200', nivelC: '$4.600' },
+  { plan: 'J6', comision: '4%-2%-1%', nivelA: '$44.800', nivelB: '$22.400', nivelC: '$11.200' },
+  { plan: 'J7', comision: '4%-2%-1%', nivelA: '$96.000', nivelB: '$48.000', nivelC: '$24.000' },
+  { plan: 'J8', comision: '4%-2%-1%', nivelA: '$200.000', nivelB: '$100.000', nivelC: '$50.000' },
+  { plan: 'J9', comision: '4%-2%-1%', nivelA: '$500.000', nivelB: '$250.000', nivelC: '$125.000' },
+];
+
+const COLUMNAS_RECOMPENSA = [
+  { key: 'plan', label: 'Plan' },
+  { key: 'comision', label: '% Comisión' },
+  { key: 'nivelA', label: 'Nivel A' },
+  { key: 'nivelB', label: 'Nivel B' },
+  { key: 'nivelC', label: 'Nivel C' },
 ];
 
 export default function FormasDeGanar() {
@@ -727,6 +755,206 @@ export default function FormasDeGanar() {
               Invita inversores y gana comisiones por 3 niveles. Los porcentajes de
               incentivos indican la comisión para el 1er, 2do y 3er nivel respectivamente.
               Desliza horizontalmente para ver toda la tabla en pantallas pequeñas.
+            </p>
+          </div>
+        </div>
+
+        {/* ===== Bloque: Recompensas por tareas de tu equipo ===== */}
+        <div className="w-full max-w-lg mx-auto mt-8">
+          {/* Tarjeta / encabezado superior */}
+          <div
+            className="rounded-2xl overflow-hidden mb-5"
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(255,193,7,0.3)',
+              boxShadow: '0 0 40px rgba(255,193,7,0.12), inset 0 1px 0 rgba(255,255,255,0.03)',
+            }}
+          >
+            <div className="p-6 flex flex-col items-center text-center">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                style={{
+                  background: 'rgba(255,193,7,0.12)',
+                  border: '1px solid rgba(255,193,7,0.35)',
+                  boxShadow: '0 0 24px rgba(255,193,7,0.2), inset 0 0 12px rgba(255,193,7,0.05)',
+                }}
+              >
+                <ClipboardList size={26} style={{ color: '#FFC107' }} />
+              </div>
+
+              <h3
+                className="font-black text-lg mb-2 leading-tight tracking-wide"
+                style={{
+                  background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 40%, #B8860B 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  filter: 'drop-shadow(0 0 14px rgba(255,193,7,0.3))',
+                }}
+              >
+                RECOMPENSAS POR TAREAS DE TU EQUIPO
+              </h3>
+
+              <div
+                className="mt-1 flex items-center gap-2 px-4 py-2 rounded-full"
+                style={{
+                  background: 'rgba(255,193,7,0.06)',
+                  border: '1px solid rgba(255,193,7,0.2)',
+                }}
+              >
+                <Users size={14} style={{ color: '#FFC107' }} />
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#FFC107' }}>
+                  Niveles A · B · C
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabla de recompensas */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(255,193,7,0.25)',
+              boxShadow: '0 0 40px rgba(255,193,7,0.1), inset 0 1px 0 rgba(255,255,255,0.03)',
+            }}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full" style={{ borderCollapse: 'collapse', minWidth: '480px' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,193,7,0.06)' }}>
+                    {COLUMNAS_RECOMPENSA.map((col, i) => (
+                      <th
+                        key={col.key}
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                          color: '#FFC107',
+                          borderBottom: '1px solid rgba(255,193,7,0.25)',
+                          borderRight:
+                            i < COLUMNAS_RECOMPENSA.length - 1
+                              ? '1px solid rgba(255,193,7,0.1)'
+                              : 'none',
+                        }}
+                      >
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {FILAS_RECOMPENSA.map((fila, idx) => (
+                    <tr
+                      key={fila.plan}
+                      className="transition-colors duration-200"
+                      style={{
+                        background:
+                          idx % 2 === 0
+                            ? 'transparent'
+                            : 'rgba(255,193,7,0.025)',
+                        borderBottom:
+                          idx < FILAS_RECOMPENSA.length - 1
+                            ? '1px solid rgba(255,193,7,0.08)'
+                            : 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background =
+                          'rgba(255,193,7,0.07)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background =
+                          idx % 2 === 0 ? 'transparent' : 'rgba(255,193,7,0.025)';
+                      }}
+                    >
+                      {/* Plan */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{ borderRight: '1px solid rgba(255,193,7,0.1)' }}
+                      >
+                        <span
+                          className="inline-block px-2.5 py-1 rounded-lg font-black text-xs"
+                          style={{
+                            background: 'rgba(255,193,7,0.12)',
+                            border: '1px solid rgba(255,193,7,0.4)',
+                            color: '#FFC107',
+                          }}
+                        >
+                          {fila.plan}
+                        </span>
+                      </td>
+                      {/* % Comisión */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#FFC107',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        {fila.comision}
+                      </td>
+                      {/* Nivel A */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#FFD700',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        {fila.nivelA}
+                      </td>
+                      {/* Nivel B */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#CCCCCC',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        {fila.nivelB}
+                      </td>
+                      {/* Nivel C */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#888888',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                        }}
+                      >
+                        {fila.nivelC}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Nota recompensas */}
+          <div
+            className="mt-4 rounded-2xl p-4 flex items-start gap-3"
+            style={{
+              background: 'rgba(255,193,7,0.05)',
+              border: '1px solid rgba(255,193,7,0.25)',
+              boxShadow: '0 0 20px rgba(255,193,7,0.06)',
+            }}
+          >
+            <ClipboardList size={18} style={{ color: '#FFC107', flexShrink: 0, marginTop: 2 }} />
+            <p className="text-xs leading-relaxed" style={{ color: '#AAAAAA' }}>
+              <span className="font-black" style={{ color: '#FFC107' }}>Tareas de equipo: </span>
+              Recibe recompensas por las tareas completadas por los miembros de tu equipo
+              en los niveles A, B y C. Los porcentajes indican la comisión aplicada
+              para cada nivel respectivamente. Desliza horizontalmente para ver toda la
+              tabla en pantallas pequeñas.
             </p>
           </div>
         </div>
