@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CircleDollarSign, Sparkles, Table2 } from 'lucide-react';
+import { ArrowLeft, CircleDollarSign, Sparkles, Table2, Users, Gift } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 
 interface Particle {
@@ -138,6 +138,34 @@ const COLUMNAS = [
   { key: 'diario', label: 'Diario' },
   { key: 'treintaDias', label: '30 días' },
   { key: 'trescientosSesentaDias', label: '360 días' },
+];
+
+interface FilaComision {
+  jerarquia: string;
+  incentivos: string;
+  primerNivel: string;
+  segundoNivel: string;
+  tercerNivel: string;
+}
+
+const FILAS_COMISION: FilaComision[] = [
+  { jerarquia: 'J1', incentivos: '6%-4%-2%', primerNivel: '9.000', segundoNivel: '6.000', tercerNivel: '3.000' },
+  { jerarquia: 'J2', incentivos: '9%-4%-2%', primerNivel: '43.200', segundoNivel: '19.200', tercerNivel: '9.600' },
+  { jerarquia: 'J3', incentivos: '12%-4%-2%', primerNivel: '156.000', segundoNivel: '52.000', tercerNivel: '26.000' },
+  { jerarquia: 'J4', incentivos: '12%-4%-2%', primerNivel: '564.000', segundoNivel: '188.000', tercerNivel: '94.000' },
+  { jerarquia: 'J5', incentivos: '12%-4%-2%', primerNivel: '1.536.000', segundoNivel: '512.000', tercerNivel: '256.000' },
+  { jerarquia: 'J6', incentivos: '12%-4%-2%', primerNivel: '3.720.000', segundoNivel: '1.240.000', tercerNivel: '620.000' },
+  { jerarquia: 'J7', incentivos: '12%-4%-2%', primerNivel: '8.064.000', segundoNivel: '2.688.000', tercerNivel: '1.344.000' },
+  { jerarquia: 'J8', incentivos: '12%-4%-2%', primerNivel: '16.200.000', segundoNivel: '5.400.000', tercerNivel: '2.700.000' },
+  { jerarquia: 'J9', incentivos: '12%-4%-2%', primerNivel: '39.000.000', segundoNivel: '13.000.000', tercerNivel: '6.500.000' },
+];
+
+const COLUMNAS_COMISION = [
+  { key: 'jerarquia', label: 'Jerarquía' },
+  { key: 'incentivos', label: 'Incentivos' },
+  { key: 'primerNivel', label: '1er nivel' },
+  { key: 'segundoNivel', label: '2do nivel' },
+  { key: 'tercerNivel', label: '3er nivel' },
 ];
 
 export default function FormasDeGanar() {
@@ -489,6 +517,216 @@ export default function FormasDeGanar() {
               El nivel <span className="font-bold" style={{ color: '#22C55E' }}>Intern</span> es gratuito
               y no genera ingresos de 30 ni 360 días. Desliza horizontalmente para ver toda la tabla en
               pantallas pequeñas.
+            </p>
+          </div>
+        </div>
+
+        {/* ===== Bloque: Ganancia / Invitar inversores recompensar ===== */}
+        <div className="w-full max-w-lg mx-auto mt-8">
+          {/* Tarjeta / encabezado superior */}
+          <div
+            className="rounded-2xl overflow-hidden mb-5"
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(255,193,7,0.3)',
+              boxShadow: '0 0 40px rgba(255,193,7,0.12), inset 0 1px 0 rgba(255,255,255,0.03)',
+            }}
+          >
+            <div className="p-6 flex flex-col items-center text-center">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                style={{
+                  background: 'rgba(255,193,7,0.12)',
+                  border: '1px solid rgba(255,193,7,0.35)',
+                  boxShadow: '0 0 24px rgba(255,193,7,0.2), inset 0 0 12px rgba(255,193,7,0.05)',
+                }}
+              >
+                <Gift size={26} style={{ color: '#FFC107' }} />
+              </div>
+
+              <h3
+                className="font-black text-2xl mb-2 leading-tight"
+                style={{
+                  background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 40%, #B8860B 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  filter: 'drop-shadow(0 0 14px rgba(255,193,7,0.3))',
+                }}
+              >
+                Ganancia
+              </h3>
+
+              <p
+                className="text-sm font-extrabold mb-1.5 tracking-wide"
+                style={{ color: '#FFC107' }}
+              >
+                Invitar a los inversores recompensar
+              </p>
+
+              <p className="text-xs" style={{ color: '#888888' }}>
+                la tabla de comisiones
+              </p>
+
+              <div
+                className="mt-4 flex items-center gap-2 px-4 py-2 rounded-full"
+                style={{
+                  background: 'rgba(255,193,7,0.06)',
+                  border: '1px solid rgba(255,193,7,0.2)',
+                }}
+              >
+                <Users size={14} style={{ color: '#FFC107' }} />
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#FFC107' }}>
+                  3 Niveles de Recompensa
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabla de comisiones */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid rgba(255,193,7,0.25)',
+              boxShadow: '0 0 40px rgba(255,193,7,0.1), inset 0 1px 0 rgba(255,255,255,0.03)',
+            }}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full" style={{ borderCollapse: 'collapse', minWidth: '520px' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,193,7,0.06)' }}>
+                    {COLUMNAS_COMISION.map((col, i) => (
+                      <th
+                        key={col.key}
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                          color: '#FFC107',
+                          borderBottom: '1px solid rgba(255,193,7,0.25)',
+                          borderRight:
+                            i < COLUMNAS_COMISION.length - 1
+                              ? '1px solid rgba(255,193,7,0.1)'
+                              : 'none',
+                        }}
+                      >
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {FILAS_COMISION.map((fila, idx) => (
+                    <tr
+                      key={fila.jerarquia}
+                      className="transition-colors duration-200"
+                      style={{
+                        background:
+                          idx % 2 === 0
+                            ? 'transparent'
+                            : 'rgba(255,193,7,0.025)',
+                        borderBottom:
+                          idx < FILAS_COMISION.length - 1
+                            ? '1px solid rgba(255,193,7,0.08)'
+                            : 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background =
+                          'rgba(255,193,7,0.07)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background =
+                          idx % 2 === 0 ? 'transparent' : 'rgba(255,193,7,0.025)';
+                      }}
+                    >
+                      {/* Jerarquía */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{ borderRight: '1px solid rgba(255,193,7,0.1)' }}
+                      >
+                        <span
+                          className="inline-block px-2.5 py-1 rounded-lg font-black text-xs"
+                          style={{
+                            background: 'rgba(255,193,7,0.12)',
+                            border: '1px solid rgba(255,193,7,0.4)',
+                            color: '#FFC107',
+                          }}
+                        >
+                          {fila.jerarquia}
+                        </span>
+                      </td>
+                      {/* Incentivos */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#FFC107',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        {fila.incentivos}
+                      </td>
+                      {/* 1er nivel */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#FFD700',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        ${fila.primerNivel}
+                      </td>
+                      {/* 2do nivel */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#CCCCCC',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          borderRight: '1px solid rgba(255,193,7,0.1)',
+                        }}
+                      >
+                        ${fila.segundoNivel}
+                      </td>
+                      {/* 3er nivel */}
+                      <td
+                        className="px-3 py-3.5 text-center whitespace-nowrap"
+                        style={{
+                          color: '#888888',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                        }}
+                      >
+                        ${fila.tercerNivel}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Nota comisiones */}
+          <div
+            className="mt-4 rounded-2xl p-4 flex items-start gap-3"
+            style={{
+              background: 'rgba(255,193,7,0.05)',
+              border: '1px solid rgba(255,193,7,0.25)',
+              boxShadow: '0 0 20px rgba(255,193,7,0.06)',
+            }}
+          >
+            <Users size={18} style={{ color: '#FFC107', flexShrink: 0, marginTop: 2 }} />
+            <p className="text-xs leading-relaxed" style={{ color: '#AAAAAA' }}>
+              <span className="font-black" style={{ color: '#FFC107' }}>Recompensas: </span>
+              Invita inversores y gana comisiones por 3 niveles. Los porcentajes de
+              incentivos indican la comisión para el 1er, 2do y 3er nivel respectivamente.
+              Desliza horizontalmente para ver toda la tabla en pantallas pequeñas.
             </p>
           </div>
         </div>
